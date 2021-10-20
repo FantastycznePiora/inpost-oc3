@@ -18,6 +18,7 @@ try {
     var map = easyPack.mapWidget(ipoc3.geoWDivId, function(point) {
       handlePointSelection(point, ipoc3.geoWDivId);
       ipoc3.selectedPoint = point;
+      postSelectedPoint();
     });
   };
 } 
@@ -27,7 +28,6 @@ catch (err) {
 }
 
 $("#collapse-shipping-method").on('change', 'input[name="shipping_method"]:checked', function(e) {
-  //console.log($(this).val().split(".")[0]);  
   // if this is inpostoc3 selected
   if ( $(this).val().split(".")[0] === ipoc3.extensionName ) 
   {
@@ -99,22 +99,39 @@ get ePMP() {
 }
 
 
-function handlePointSelection(point, mapdivid) {
-   if( $('#'+ mapdivid +'-selected-point').length ){
-           $('#'+ mapdivid +'-selected-point').text( ' ('+ point.name +')');
-   } else{
-     $('<span id=\"'+ mapdivid +'-selected-point\" style=\"cursor:pointer;color:blue;text-decoration:underline;\">('+ point.name +')</span>').insertBefore('#'+mapdivid)
-   }
-   // todo: change label value, so the backend controller can grab selected point upon POST
-   $('#'+mapdivid).hide(animationDelay);
-   // set point.name to a 'value' attribute of radio button in order to grab it later in backend
-   // replace previously selected point with current selection
-       var val = $('input:radio[name="shipping_method"]:checked').val();
-   val = val.split('.');
-   if ( val.length < 3 ) { val.push(point.name); }
-   else {val[2] = point.name; }
-   $('input:radio[name="shipping_method"]:checked').val(val.join("."));
 
+
+function handlePointSelection(point, mapdivid) {
+  console.log('enterign callback with ajax');
+  if( $('#'+ mapdivid +'-selected-point').length ){
+    $('#'+ mapdivid +'-selected-point').text( ' ('+ point.name +')');
+  } else{
+  $('<span id=\"'+ mapdivid +'-selected-point\" style=\"cursor:pointer;color:blue;text-decoration:underline;\">('+ point.name +')</span>').insertBefore('#'+mapdivid)
+  }
+  // todo: change label value, so the backend controller can grab selected point upon POST
+  $('#'+mapdivid).hide(animationDelay);
+  // set point.name to a 'value' attribute of radio button in order to grab it later in backend
+  // replace previously selected point with current selection
+  var val = $('input:radio[name="shipping_method"]:checked').val();
+  val = val.split('.');
+  if ( val.length < 3 ) { val.push(point.name); }
+  else {val[2] = point.name; }
+  $('input:radio[name="shipping_method"]:checked').val(val.join("."));
+}
+
+function postSelectedPoint(){
+  $.ajax({
+    url: 'index.php?route=extension/shipping/inpostoc3/saveSelectedPoint',
+    type: 'post',
+    data: $('#collapse-shipping-method input[type=\'radio\']:checked'),
+    dataType: 'json',
+   success: function() {
+      console.log('index.php?route=extension/shipping/saveSelectedPoint called');
+    },
+    error: function(xhr, ajaxOptions, thrownError) {
+      alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+    }
+  });
 }
 
 

@@ -12,17 +12,16 @@ class ModelExtensionShippingInPostOC3 extends Model {
                 `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 `updated_at` TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
                 `service_identifier` VARCHAR(100) NOT NULL,
-                `service_name` VARCHAR(250) NULL,
-                `service_description` VARCHAR(500) NULL,
-                `language_id` INT(11) DEFAULT 1 COMMENT 'OpenCart language_id',
                 INDEX(`service_identifier`),
                 PRIMARY KEY(`id`)
           ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
         ");
+
         $this->db->query("       
-            INSERT IGNORE INTO `inpostoc3_services` (`id`,`service_identifier`,`service_name`,`service_description`) VALUES
-            ( 1 , 'inpost_locker_standard' , '" .$this->language->get('text_service_name'). "' , '" .$this->language->get('text_service_description'). "');
+            INSERT IGNORE INTO `inpostoc3_services` (`id`,`service_identifier`) VALUES
+            ( 1 , 'inpost_locker_standard' );
         ");
+        //, '" .$this->language->get('text_inpost_locker_standard_name'). "' , '" .$this->language->get('text_inpost_locker_standard_description'). "','". (int)$this->config->get('config_language_id')  ."');
 
         $this->db->query("
             CREATE TABLE IF NOT EXISTS `inpostoc3_parcel_templates` (
@@ -31,9 +30,11 @@ class ModelExtensionShippingInPostOC3 extends Model {
                 `updated_at` TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
                 `service_id` INT(11) NOT NULL,
                 `template_identifier` varchar(100) NULL COMMENT 'https://dokumentacja-inpost.atlassian.net/wiki/spaces/PL/pages/11731062/1.9.1+Rozmiary+i+us+ugi+dla+przesy+ek',
-                `template_description` varchar(100) NULL,  
-                `template_comments` varchar(2000) NULL,  
-                `language_id` INT(11) DEFAULT 1 COMMENT 'OpenCart language_id',
+                `min_height` INT(3) NULL COMMENT 'mm',
+                `max_height` INT(3) NULL COMMENT 'mm',
+                `max_width` INT(3) NULL COMMENT 'mm',  
+                `max_length` INT(3) NULL COMMENT 'mm',
+                `max_weight` INT(3) NULL COMMENT 'kg',
                 PRIMARY KEY(`id`),
                 INDEX (`service_id`),
                 FOREIGN KEY (`service_id`) REFERENCES `inpostoc3_services`(`id`)
@@ -45,16 +46,19 @@ class ModelExtensionShippingInPostOC3 extends Model {
                 `id`,
                 `service_id`,
                 `template_identifier`,
-                `template_description`,
-                `template_comments`
+                `min_height`,
+                `max_height`,
+                `max_width`, 
+                `max_length`,
+                `max_weight`
             ) VALUES 
-            (1,1,'small','" .$this->language->get('text_size_a'). "', NULL),
-            (2,1,'medium','" .$this->language->get('text_size_b'). "', NULL),
-            (3,1,'large', '" .$this->language->get('text_size_c'). "', NULL)
+            (1,1,'small',1,80,380,640,25),
+            (2,1,'medium',81,190,380,640,25),
+            (3,1,'large',191,410,380,640,25);
         ");
-        
+        //'" .$this->language->get('text_template_description_size_a'). "', NULL, '". (int)$this->config->get('config_language_id')  ."'
         $this->db->query("
-            CREATE TABLE IF NOT EXISTS `inpostoc3_shipment` (
+            CREATE TABLE IF NOT EXISTS `inpostoc3_shipments` (
                 `id` INT(11) UNIQUE AUTO_INCREMENT,
                 `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 `updated_at` TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
@@ -108,12 +112,54 @@ class ModelExtensionShippingInPostOC3 extends Model {
                 FOREIGN KEY (`shipment_id`) REFERENCES `inpostoc3_shipments`(`id`),
                 FOREIGN KEY (`template_id`) REFERENCES `inpostoc3_parcel_templates`(`id`)
             ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
-        ");       
+        ");  
+        
+        // check if length class for mm is defined, if not - add one/show warning
+        // check if weight class for kg is defined, if not - add one/show warning
 
     }
     
     public function uninstall() {
         //$this->log->write(print_r('model\extension\shipping\inpostoc3 uninstall before db uninstall', true));
         // do nothing, preserve data 
+    }
+
+    public function getServices() {
+        
+        $query = $this->db->query("
+            SELECT * FROM `inpostoc3_services`;
+        ");
+        $results = array();
+        foreach($query->rows as $row){
+            $results[]=$row;
+        }
+        return $results; 
+    }
+
+    public function getParcelTemplates() {
+        
+        $query = $this->db->query("
+            SELECT * FROM `inpostoc3_parcel_templates`;
+        ");
+        $results = array();
+        foreach($query->rows as $row){
+            $results[]=$row;
+        }
+        return $results; 
+    }
+
+    public function getServicesWithAssocParcelTemplates() {
+        $services = $this->getServices();
+        $parcel_templates = $this->getParcelTemplates();
+
+        foreach($services as $serviceK => $serviceV){
+            foreach($parcel_templates as $parcel_template)  {
+                if($parcel_template['service_id']===$services[$serviceK]['id']){
+                   $services[$serviceK]['parcel_templates'][$parcel_template['id']]=$parcel_template; 
+                }
+            }  
+        }
+
+        return $services;
     }
 }

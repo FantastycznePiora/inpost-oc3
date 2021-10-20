@@ -74,30 +74,76 @@
                   </div>
                 </div>
                 
-
                 {% for geo_zone in geo_zones %}
                 <div class="tab-pane" id="tab-geo-zone{{ geo_zone.geo_zone_id }}">
+                  {% for inpost_service in inpost_services  %}
                   <div class="form-group">
-                    <label class="col-sm-2 control-label" for="input-status{{ geo_zone.geo_zone_id }}">{{ entry_status_parcel_locker }}</label>
+                    <label class="col-sm-2 control-label" for="input-status-{{ geo_zone.geo_zone_id }}-{{ inpost_service.id}}">{{ attribute(_context,'text_' ~inpost_service.service_identifier~'_name') }} {{ entry_service_status }}</label>
                     <div class="col-sm-10">
-                        <select name="shipping_inpostoc3_{{ geo_zone.geo_zone_id }}_status" id="input-status{{ geo_zone.geo_zone_id }}" class="form-control">
-                            {% if shipping_inpostoc3_geo_zone_status[geo_zone.geo_zone_id] %}
-                                <option value="1" selected="selected">{{ text_enabled }}</option>
-                                <option value="0">{{ text_disabled }}</option>
+                      <select name="shipping_inpostoc3_{{ geo_zone.geo_zone_id }}_{{inpost_service.id}}_status" id="input-status-{{ geo_zone.geo_zone_id }}-{{inpost_service.id}}" class="form-control">
+                        {% if shipping_inpostoc3_geo_zone_status[geo_zone.geo_zone_id][inpost_service.id] %}
+                            <option value="1" selected="selected">{{ text_enabled }}</option>
+                            <option value="0">{{ text_disabled }}</option>
+                        {% else %}
+                            <option value="1">{{ text_enabled }}</option>
+                            <option value="0" selected="selected">{{ text_disabled }}</option>
+                        {% endif %}
+                    </select>
+                    </div>
+                  </div>
+                  {% if inpost_service.service_identifier is same as("inpost_locker_standard")  %}
+                  <div class="form-group">
+                    <label class="col-sm-2 control-label" for="input-locker-standard-rate-{{ geo_zone.geo_zone_id }}-{{ inpost_service.id}}"><span data-toggle="tooltip" title="{{ help_rate }}">{{ entry_rate }}</span></label>
+                    <div class="col-sm-10">
+                      <textarea name="shipping_inpostoc3_{{ geo_zone.geo_zone_id }}_{{ inpost_service.id}}_locker_standard_rate" rows="5" placeholder="{{ entry_rate }}" id="input-locker-standard-rate-{{ geo_zone.geo_zone_id }}-{{ inpost_service.id}}" class="form-control">{{ shipping_inpostoc3_geo_zone_locker_standard_rate[geo_zone.geo_zone_id][inpost_service.id] ? shipping_inpostoc3_geo_zone_locker_standard_rate[geo_zone.geo_zone_id][inpost_service.id] }}</textarea>
+                    </div>
+                  </div>
+
+                  {% for parcel_template in inpost_service.parcel_templates %}
+
+                  <div class="form-group">
+                    <label class="col-sm-2 control-label">{{ attribute(_context, 'text_template_description_size_'~parcel_template.template_identifier) }}</label>
+                    <div class="col-sm-10">
+                      <div class="row">
+                        <label class="col-sm-2 control-label" for="input-weight-class-{{ geo_zone.geo_zone_id }}-{{ parcel_template.id }}"><span data-toggle="tooltip" title="{{ help_parcel_template_weight_class }}">{{ text_weight_class }}</span></label>
+                        <div class="col-sm-4">
+                          <select name="shipping_inpostoc3_{{ geo_zone.geo_zone_id }}_{{ parcel_template.id }}_weight_class_id" id="input-weight-class-{{ geo_zone.geo_zone_id }}-{{ parcel_template.id }}" class="form-control">
+                            {% for weight_class in weight_classes %}
+                            {% if weight_class.weight_class_id == (shipping_inpostoc3_geo_zone_weight_class_id[geo_zone.geo_zone_id][parcel_template.id]) %}
+                            <option value="{{ shipping_inpostoc3_geo_zone_weight_class_id[geo_zone.geo_zone_id][parcel_template.id] }}" selected="selected">{{ weight_class.title }}</option>
                             {% else %}
-                                <option value="1">{{ text_enabled }}</option>
-                                <option value="0" selected="selected">{{ text_disabled }}</option>
+                            <option value="{{ weight_class.weight_class_id }}">{{ weight_class.title }}</option>
                             {% endif %}
-                        </select>
+                            {% endfor %}
+                          </select>
+                        </div>
+
+                        <label class="col-sm-2 control-label" for="input-length-class-{{ geo_zone.geo_zone_id }}-{{ parcel_template.id }}"><span data-toggle="tooltip" title="{{ help_parcel_template_length_class }}">{{ text_length_class }}</span></label>
+                        <div class="col-sm-4">
+                          <select name="shipping_inpostoc3_{{ geo_zone.geo_zone_id }}_{{ parcel_template.id }}_length_class_id" id="input-length-class-{{ geo_zone.geo_zone_id }}-{{ parcel_template.id }}" class="form-control">
+                            {% for length_class in length_classes %}
+                            {% if length_class.length_class_id == (shipping_inpostoc3_geo_zone_length_class_id[geo_zone.geo_zone_id][parcel_template.id]) %}
+                            <option value="{{ shipping_inpostoc3_geo_zone_length_class_id[geo_zone.geo_zone_id][parcel_template.id] }}" selected="selected">{{ length_class.title }}</option>
+                            {% else %}
+                            <option value="{{ length_class.length_class_id }}">{{ length_class.title }}</option>
+                            {% endif %}
+                            {% endfor %}
+                          </select>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div class="form-group">
-                    <label class="col-sm-2 control-label" for="input-parcel-locker-rate{{ geo_zone.geo_zone_id }}"><span data-toggle="tooltip" title="{{ help_rate }}">{{ entry_rate }}</span></label>
-                    <div class="col-sm-10">
-                      <textarea name="shipping_inpostoc3_{{ geo_zone.geo_zone_id }}_parcel_locker_rate" rows="5" placeholder="{{ entry_rate }}" id="input-parcel-locker-rate{{ geo_zone.geo_zone_id }}" class="form-control">{{ shipping_inpostoc3_geo_zone_parcel_locker_rate[geo_zone.geo_zone_id] ? shipping_inpostoc3_geo_zone_parcel_locker_rate[geo_zone.geo_zone_id] }}</textarea>
-                    </div>
-                  </div>
+                  </div>  
+
+
+
+                  {%  endfor %}
+
+
+                  {% endif  %}
+                  {% endfor %}
+                  
                   <!-- debug print to be removed later -->
+                  <!-- 
                   <div class="form-group">
                     <label class="col-sm-2 control-label">Print</label>
                     <div class="col-sm-10">
@@ -107,6 +153,7 @@
                         <br/>{{ shipping_inpostoc3_geo_zone_use_sandbox_api[geo_zone.geo_zone_id] }}
                     </div>
                   </div>
+                  -->
                   <!-- Display or hide API options -->
                   {% if not shipping_inpostoc3_geo_zone_hide_api[geo_zone.geo_zone_id] %}
                   <div class="form-group">

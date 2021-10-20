@@ -12,6 +12,11 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
         //specific inpostoc3 model
         //$this->log->write(print_r('controller\extension\shipping\inpostoc3 index before model load', true));
         $this->load->model('extension/shipping/inpostoc3');
+        $inpost_services = $this->model_extension_shipping_inpostoc3->getServicesWithAssocParcelTemplates();
+        //$inpost_parcel_templates = $this->model_extension_shipping_inpostoc3->getParcelTemplates();
+        //$this->log->write(print_r($this->model_extension_shipping_inpostoc3->getServices(), true));
+        //$this->log->write(print_r($this->model_extension_shipping_inpostoc3->getParcelTemplates(), true));
+        
         
         if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validate()) {
 			$this->model_setting_setting->editSetting('shipping_inpostoc3', $this->request->post);
@@ -49,30 +54,67 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
         $data['action'] = $this->url->link('extension/shipping/inpostoc3', 'user_token=' . $this->session->data['user_token'], true);
 		$data['cancel'] = $this->url->link('marketplace/extension', 'user_token=' . $this->session->data['user_token'] . '&type=shipping', true);
 
+
+
         // populate the default values of the configuration form fields either in add or edit mode.
         // configure InPost services in context of GeoZones in order to provide different rates and services enabled - framework for future extensions
         $this->load->model('localisation/geo_zone');
-
 		$geo_zones = $this->model_localisation_geo_zone->getGeoZones();
+        
+        $filter = array();
+        $filter['order']='DESC';
+        $filter['sort']='value';
+        $this->load->model('localisation/weight_class');
+        $data['weight_classes'] = $this->model_localisation_weight_class->getWeightClasses($filter);
+
+        $this->load->model('localisation/length_class');
+        $data['length_classes'] = $this->model_localisation_length_class->getLengthClasses($filter);
+
+
+
         foreach ($geo_zones as $geo_zone) {
-            if (isset($this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_status'])) {
+            /*if (isset($this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_status'])) {
 				$data['shipping_inpostoc3_geo_zone_status'][$geo_zone['geo_zone_id']] = $this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_status'];
 			} else {
 				$data['shipping_inpostoc3_geo_zone_status'][$geo_zone['geo_zone_id']] = $this->config->get('shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_status');
-			}
-            // Basic Parcel Locker Service
-            if (isset($this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_parcel_locker_status'])) {
-                $data['shipping_inpostoc3_geo_zone_parcel_locker_status'][$geo_zone['geo_zone_id']] = $this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_parcel_locker_status'];
-            } else {
-                $data['shipping_inpostoc3_geo_zone_parcel_locker_status'][$geo_zone['geo_zone_id']] = $this->config->get('shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_parcel_locker_status');
+			}*/
+            foreach($inpost_services as $inpost_service){
+
+                if (isset($this->request->post['shipping_inpostoc3_'. $geo_zone['geo_zone_id'] . '_' . $inpost_service['id'] . '_status'])) {
+                    $data['shipping_inpostoc3_geo_zone_status'][$geo_zone['geo_zone_id']][$inpost_service['id']] = $this->request->post['shipping_inpostoc3_'. $geo_zone['geo_zone_id'] . '_' . $inpost_service['id'] . '_status'];
+                } else {
+                    $data['shipping_inpostoc3_geo_zone_status'][$geo_zone['geo_zone_id']][$inpost_service['id']] = $this->config->get('shipping_inpostoc3_'. $geo_zone['geo_zone_id'] . '_' . $inpost_service['id'] . '_status');
+                }
+
+                // TODO: split into ABC size classess & rates or figure out system to check dimensions & weight < 25kg and do text input here
+                if (isset($this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $inpost_service['id'] . '_locker_standard_rate'])) {
+                    $data['shipping_inpostoc3_geo_zone_locker_standard_rate'][$geo_zone['geo_zone_id']][$inpost_service['id']] = $this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $inpost_service['id'] . '_locker_standard_rate'];
+                } else {
+                    $data['shipping_inpostoc3_geo_zone_locker_standard_rate'][$geo_zone['geo_zone_id']][$inpost_service['id']] = $this->config->get('shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $inpost_service['id'] .'_locker_standard_rate');
+                }
+
+ 
+                foreach ($inpost_service['parcel_templates'] as $parcel_template) {
+                    if (isset($this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $parcel_template['id'] . '_weight_class_id'])) {
+                        $data['shipping_inpostoc3_geo_zone_weight_class_id'][$geo_zone['geo_zone_id']][$parcel_template['id']] = $this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $parcel_template['id'] . '_weight_class_id'];
+                    } else {
+                        $data['shipping_inpostoc3_geo_zone_weight_class_id'][$geo_zone['geo_zone_id']][$parcel_template['id']] = $this->config->get('shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $parcel_template['id'] . '_weight_class_id');
+                    }
+                    
+                    
+                    if (isset($this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $parcel_template['id'] . '_length_class_id'])) {
+                        $data['shipping_inpostoc3_geo_zone_length_class_id'][$geo_zone['geo_zone_id']][$parcel_template['id']] = $this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $parcel_template['id'] . '_length_class_id'];
+                    } else {
+                        $data['shipping_inpostoc3_geo_zone_length_class_id'][$geo_zone['geo_zone_id']][$parcel_template['id']] = $this->config->get('shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $parcel_template['id'] . '_length_class_id');
+                    }
+                }
+
+                        // add max_height, max_width, max_length for mm
+                        // add max_weight for kg
+                        // these will determine wheter to use template small/medium/large and usually should be ca 2cm under default limits
+
             }
-            // TODO: split into ABC size classess & rates or figure out system to check dimensions & weight < 25kg and do text input here
-            if (isset($this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_parcel_locker_rate'])) {
-				$data['shipping_inpostoc3_geo_zone_parcel_locker_rate'][$geo_zone['geo_zone_id']] = $this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_parcel_locker_rate'];
-			} else {
-				$data['shipping_inpostoc3_geo_zone_parcel_locker_rate'][$geo_zone['geo_zone_id']] = $this->config->get('shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_parcel_locker_rate');
-			}
-            
+                       
             //country check for this specific geozone in order to hide/show API options
             $data['shipping_inpostoc3_geo_zone_hide_api'][$geo_zone['geo_zone_id']] = false;
             $zones_to_gz = $this->model_localisation_geo_zone->getZoneToGeoZones($geo_zone['geo_zone_id']);
@@ -123,7 +165,10 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
                 }
             }
         }
+        // expose variables for template
         $data['geo_zones'] = $geo_zones;
+        $data['inpost_services'] =  $inpost_services;
+        //$data['inpost_parcel_templates'] = $inpost_parcel_templates;
         
         // general extension status
         if (isset($this->request->post['shipping_inpostoc3_status'])) {
