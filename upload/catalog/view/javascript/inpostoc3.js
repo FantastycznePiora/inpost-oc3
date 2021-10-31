@@ -29,6 +29,7 @@ catch (err) {
 
 $("#collapse-shipping-method").on('change', 'input[name="shipping_method"]:checked', function(e) {
   // if this is inpostoc3 selected
+  console.log($(this).attr('id'));
   if ( $(this).val().split(".")[0] === ipoc3.extensionName ) 
   {
     // if div with map exists and no point selected - just show it upon selection of shipping option

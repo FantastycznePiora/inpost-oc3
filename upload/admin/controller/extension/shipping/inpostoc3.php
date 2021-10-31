@@ -221,6 +221,15 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
         $this->log->write(print_r('controller\extension\shipping\inpostoc3 install before db install', true));
         $this->load->model('extension/shipping/inpostoc3');
         $this->model_extension_shipping_inpostoc3->install();
+        
+        $this->load->model('setting/event');
+        //event for injecting a piece of js into route=checkout/checkout
+        $this->model_setting_event->deleteEventByCode('inpostoc3_eventCatalogCheckoutShippingMethodAfter');
+        $this->model_setting_event->deleteEventByCode('inpostoc3_eventCatalogCheckoutAfter');
+        $this->model_setting_event->addEvent('inpostoc3_eventCatalogCheckoutShippingMethodAfter', 
+                                                'catalog/view/checkout/checkout/after', 
+                                                'extension/shipping/inpostoc3/eventCatalogCheckoutShippingMethodAfter');
+        
     }
  
     public function uninstall() {
@@ -229,5 +238,13 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
         $this->log->write(print_r('controller\extension\shipping\inpostoc3 uninstall before db uninstall', true));
         $this->load->model('extension/shipping/inpostoc3');
         $this->model_extension_shipping_inpostoc3->uninstall();
+
+        //cleanup events registered in install
+        $this->load->model('setting/event');
+        $this->model_setting_event->deleteEventByCode('inpostoc3_eventCatalogCheckoutShippingMethodAfter');
+        $this->model_setting_event->deleteEventByCode('inpostoc3_eventCatalogCheckoutAfter');
+
     }
+
+    
 }

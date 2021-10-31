@@ -30,4 +30,15 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
         $this->response->addHeader('Content-Type: application/json');
 		$this->response->setOutput(json_encode($json));
     }
+
+    // catalog/view/checkout/checkout/after
+    public function eventCatalogCheckoutShippingMethodAfter(&$route,&$data,&$output)
+    {
+        //$this->log->write('catalog/controller/extension/shipping/inpostoc3/eventCatalogCheckoutShippingMethodAfter event handler');
+        // inject geowidget script and handler once page rendered and before sending to client
+        $pos = strpos($output,'</head>');
+        $inject = '<script src="catalog/view/javascript/inpostoc3.js" type="text/javascript"></script>';
+        $output=substr($output, 0, $pos) . $inject . substr($output, $pos);
+    }
+
 }

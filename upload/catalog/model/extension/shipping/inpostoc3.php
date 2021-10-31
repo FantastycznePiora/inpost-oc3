@@ -96,7 +96,7 @@ class ModelExtensionShippingInPostOC3 extends Model {
                     if ((string)$cost != '') {
                         $quote_data[ $result['geo_zone_id'] . '_' . $inpost_service['id'] . '_' . $selected_template['template_identifier'] ] = array(
                             'code'         => 'inpostoc3.' . $result['geo_zone_id'] . '_' . $inpost_service['id'] . '_' . $selected_template['template_identifier'] . '.NONE',
-                            'title'        => $result['name'] . '  (' . $this->language->get('text_'. $inpost_service['service_identifier'] .'_description'),
+                            'title'        => $result['name'] . '  (' . $this->language->get('text_'. $inpost_service['service_identifier'] .'_description') .')',
                             'cost'         => $cost,
                             'tax_class_id' => $this->config->get('shipping_inpostoc3_tax_class_id'),
                             'text'         => $this->currency->format($this->tax->calculate($cost, $this->config->get('shipping_inpostoc3_tax_class_id'), $this->config->get('config_tax')), $this->session->data['currency'])
@@ -115,7 +115,7 @@ class ModelExtensionShippingInPostOC3 extends Model {
 		if ($quote_data) {
 			$method_data = array(
 				'code'       => 'inpostoc3',
-				'title'      => $this->language->get('text_title'),
+				'title'      => $this->language->get('text_'. $inpost_service['service_identifier'] .'_title'),
 				'quote'      => $quote_data,
 				'sort_order' => $this->config->get('shipping_inpostoc3_sort_order'),
 				'error'      => false
