@@ -162,4 +162,49 @@ class ModelExtensionShippingInPostOC3 extends Model {
 
         return $services;
     }
+
+    public function getShippingCodeFromOrder($order_id) {
+        //$this->log->write(__METHOD__ .' with order id: '.$order_id);
+        $result = null;
+        if($order_id) {
+            $query = $this->db->query("
+            SELECT `shipping_code` FROM `" . DB_PREFIX . "order` o WHERE o.order_id = '" . (int)$order_id . "'
+            ");
+
+            if($query->num_rows == 1){ // there shall be only one!
+                $result = $query->row['shipping_code'];
+            }
+        }
+        return $result; 
+    }
+
+    public function getServiceIdentifier($service_id) {
+        //$this->log->write(__METHOD__ .' with service id: '.$service_id);
+        $result = null;
+        if($service_id){
+            $query = $this->db->query("
+            SELECT `service_identifier` FROM `inpostoc3_services` WHERE `id` = '" . (int)$service_id . "';
+            ");
+
+            if($query->num_rows == 1) { // there shall be only one!
+                $result = $query->row['service_identifier'];
+            }
+        }
+        return $result; 
+    }
+
+    public function getParcelTemplateIdentifier($parcel_template_id) {
+        $result = null;
+        if($parcel_template_id){
+            $query = $this->db->query("
+            SELECT `template_identifier` FROM `inpostoc3_parcel_templates` WHERE `id` = '" . (int)$parcel_template_id . "';
+            ");
+
+            if($query->num_rows == 1) { // there shall be only one!
+                $result = $query->row['template_identifier'];
+            }
+        }
+        return $result; 
+
+    }
 }

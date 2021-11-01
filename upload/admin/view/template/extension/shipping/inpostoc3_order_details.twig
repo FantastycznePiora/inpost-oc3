@@ -1,0 +1,25 @@
+{% if shipping_method %}
+  <tr>
+    <td><button data-toggle="tooltip" title="{{ text_shipping_method }}" class="btn btn-info btn-xs"><i class="fa fa-truck fa-fw"></i></button></td>
+    <td>{{ shipping_method }} 
+    {% if shipping_code_inpostoc3_used %} 
+      <div id="{{ shipping_code }}">
+      {% if shipping_code_inpostoc3_parcel_template_identifier %}
+        <div> {{ attribute(_context, 'text_template_description_size_'~shipping_code_inpostoc3_parcel_template_identifier) }} </div>
+      {% endif %}
+      {% if shipping_code_inpostoc3_service_identifier == "inpost_locker_standard" %}
+         <div>{{ text_selected_target_point }}: {{ shipping_code_inpostoc3_target_point }}</div>  
+         {% if shipping_code_inpostoc3_sending_method %}
+          <div>{{ text_selected_sending_method }}: {{ shipping_code_inpostoc3_sending_method }} </div>
+          {% if shipping_code_inpostoc3_sending_point %}
+            <div>{{ text_selected_sending_point }}: {{ shipping_code_inpostoc3_sending_point }}</div>
+          {% elseif shipping_code_inpostoc3_sending_address %}
+            <div>{{ text_selected_sending_address }}: {{ shipping_code_inpostoc3_sending_address }}</div>
+          {% endif %}
+         {% endif %}
+      {% endif %}
+      </div>
+    {% endif %}
+    </td>
+  </tr>
+{% endif %}

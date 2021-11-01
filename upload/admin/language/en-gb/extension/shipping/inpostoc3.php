@@ -12,11 +12,20 @@ $_['text_enabled']     = 'Enabled';
 $_['text_disabled']    = 'Disabled';
 $_['text_yes']         = 'Yes';
 $_['text_no']          = 'No';
-$_['text_inpost_locker_standard_name']     = 'ParcelLocker Standard'; //'Paczkomatowa standardowa'
-$_['text_inpost_locker_standard_description']     = 'ParcelLocker standard shipment'; // 'Przesyłka paczkomatowa standardowa'
-$_['text_template_description_size_small']      = 'Parcel template size: small'; // Gabaryt A  
-$_['text_template_description_size_medium']      = 'Parcel template size: medium'; // Gabaryt B  
-$_['text_template_description_size_large']      = 'Parcel template size: large'; // Gabaryt C  
+$_['text_inpost_locker_standard_name']              = 'ParcelLocker Standard'; //'Paczkomatowa standardowa'
+$_['text_inpost_locker_standard_description']       = 'ParcelLocker standard shipment'; // 'Przesyłka paczkomatowa standardowa'
+$_['text_template_description']                     = 'Parcel template';
+$_['text_template_description_small']               = 'small'; // Gabaryt A  
+$_['text_template_description_medium']              = 'medium'; // Gabaryt B  
+$_['text_template_description_large']               = 'large'; // Gabaryt C  
+$_['text_template_description_size_small']          = 'Parcel template size: small'; // Gabaryt A  
+$_['text_template_description_size_medium']         = 'Parcel template size: medium'; // Gabaryt B  
+$_['text_template_description_size_large']          = 'Parcel template size: large'; // Gabaryt C  
+$_['text_selected_target_point']                    = 'Selected target point';
+$_['text_selected_sending_method']                  = 'Selected sending method';
+$_['text_selected_sending_point']                   = 'Selected sending point';
+$_['text_selected_sending_address']                 = 'Selected sending address';
+$_['text_service_identifier']                       = 'Service identifier';
 
 // Entry
 $_['entry_status']               = 'Status';
