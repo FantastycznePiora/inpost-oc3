@@ -1,6 +1,8 @@
 <?php
 // Heading
 $_['heading_title'] = 'InPost for OpenCart3 Shipping Extension';
+$_['heading_title_order_shipping'] = 'Ship Order via InPost Integration';
+$_['heading_title_orders'] = 'Orders';
 
 // Text
 $_['text_extension']   = 'Extensions';
@@ -26,21 +28,25 @@ $_['text_selected_sending_method']                  = 'Selected sending method';
 $_['text_selected_sending_point']                   = 'Selected sending point';
 $_['text_selected_sending_address']                 = 'Selected sending address';
 $_['text_service_identifier']                       = 'Service identifier';
+$_['text_sending_method_parcel_locker']             = 'I will post a package at parcel locker'; // 'Nadam przesyłkę w Paczkomacie'
 
 // Entry
-$_['entry_status']               = 'Status';
-$_['entry_service_status'] = 'Service Status';
-$_['entry_sort_order']           = 'Sort Order';  
-$_['entry_rate']                 = 'Rates';
-$_['entry_tax_class']  = 'Tax Class';
+$_['entry_status']                                  = 'Status';
+$_['entry_service_status']                          = 'Service Status';
+$_['entry_sort_order']                              = 'Sort Order';  
+$_['entry_rate']                                    = 'Rates';
+$_['entry_tax_class']                               = 'Tax Class';
 //$_['entry_geo_zone']   = 'Geo Zone';
-$_['entry_please_note']          = 'PLEASE NOTE!';   
-$_['entry_use_api']              = 'Enable automation via InPost API?';
-$_['entry_use_sandbox_api']      = 'Use Sandbox API?';
-$_['entry_sandbox_api_endpoint'] = 'Sandbox API address';
-$_['entry_sandbox_api_token']    = 'Sandbox API Token';
-$_['entry_api_endpoint']         = 'API address';
-$_['entry_api_token']            = 'API Token';
+$_['entry_please_note']                             = 'PLEASE NOTE!';   
+$_['entry_use_api']                                 = 'Enable automation via InPost API?';
+$_['entry_use_sandbox_api']                         = 'Use Sandbox API?';
+$_['entry_sandbox_api_endpoint']                    = 'Sandbox API address';
+$_['entry_sandbox_api_token']                       = 'Sandbox API Token';
+$_['entry_sandbox_api_org_id']                      = 'Sandbox API organization id';
+$_['entry_api_endpoint']                            = 'API address';
+$_['entry_api_token']                               = 'API Token';
+$_['entry_api_org_id']                              = 'API organization id';
+$_['entry_sending_method_parcel_locker']            = 'Post at parcel locker';  // 'Nadanie w Paczkomacie'
 
 // Help
 $_['help_rate']        = 'Example: small:10.00,medium:12.00 Parcel template size:Cost,Parcel template size:Cost, etc...';

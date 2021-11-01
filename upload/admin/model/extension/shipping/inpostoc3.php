@@ -11,7 +11,7 @@ class ModelExtensionShippingInPostOC3 extends Model {
                 `id` INT(11) UNIQUE AUTO_INCREMENT,
                 `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 `updated_at` TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
-                `service_identifier` VARCHAR(100) NOT NULL,
+                `service_identifier` UNIQUE VARCHAR(100) NOT NULL,
                 INDEX(`service_identifier`),
                 PRIMARY KEY(`id`)
           ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
@@ -21,7 +21,38 @@ class ModelExtensionShippingInPostOC3 extends Model {
             INSERT IGNORE INTO `inpostoc3_services` (`id`,`service_identifier`) VALUES
             ( 1 , 'inpost_locker_standard' );
         ");
-        //, '" .$this->language->get('text_inpost_locker_standard_name'). "' , '" .$this->language->get('text_inpost_locker_standard_description'). "','". (int)$this->config->get('config_language_id')  ."');
+
+        $this->db->query("
+            CREATE TABLE IF NOT EXISTS `inpostoc3_sending_method` (
+            `id` INT(11) UNIQUE AUTO_INCREMENT,
+            `sending_method_identifier` VARCHAR(100) UNIQUE NOT NULL,
+            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY(`id`),
+            INDEX(`sending_method_identifier`)
+            ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+        ");
+        $this->db->query("
+            INSERT IGNORE INTO `inpostoc3_sending_method` (`id`,`sending_method_identifier`) VALUES
+            (1, 'parcel_locker' );
+        ");
+
+        $this->db->query("
+            CREATE TABLE IF NOT EXISTS `inpostoc3_services_sending_method` (
+            `id` INT(11) UNIQUE AUTO_INCREMENT,
+            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
+            `service_id` INT(11) NOT NULL,
+            `sending_method_id` INT(11) NOT NULL,
+            PRIMARY KEY(`id`),
+            FOREIGN KEY (`service_id`) REFERENCES `inpostoc3_service`(`id`),
+            FOREIGN KEY (`sending_method_id`) REFERENCES `inpostoc3_sending_method`(`id`)
+            ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci; 
+        ");
+        $this->db->query("
+            INSERT IGNORE INTO `inpostoc3_services_sending_method` (`id`,`service_id`, `sending_method_id`) VALUES
+            (1, 1, 1 );
+        ");
 
         $this->db->query("
             CREATE TABLE IF NOT EXISTS `inpostoc3_parcel_templates` (
@@ -56,7 +87,7 @@ class ModelExtensionShippingInPostOC3 extends Model {
             (2,1,'medium',81,190,380,640,25),
             (3,1,'large',191,410,380,640,25);
         ");
-        //'" .$this->language->get('text_template_description_size_a'). "', NULL, '". (int)$this->config->get('config_language_id')  ."'
+        
         $this->db->query("
             CREATE TABLE IF NOT EXISTS `inpostoc3_shipments` (
                 `id` INT(11) UNIQUE AUTO_INCREMENT,

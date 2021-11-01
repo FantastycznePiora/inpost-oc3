@@ -152,6 +152,11 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
                 } else {
                     $data['shipping_inpostoc3_geo_zone_sandbox_api_token'][$geo_zone['geo_zone_id']] = $this->config->get('shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_sandbox_api_token');
                 }
+                if (isset($this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_sandbox_api_org_id'])) {
+                    $data['shipping_inpostoc3_geo_zone_sandbox_api_org_id'][$geo_zone['geo_zone_id']] = $this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_sandbox_api_org_id'];
+                } else {
+                    $data['shipping_inpostoc3_geo_zone_sandbox_api_org_id'][$geo_zone['geo_zone_id']] = $this->config->get('shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_sandbox_api_org_id');
+                }
                 // production API settings
                 if (isset($this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_api_endpoint'])) {
                     $data['shipping_inpostoc3_geo_zone_api_endpoint'][$geo_zone['geo_zone_id']] = $this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_api_endpoint'];
@@ -162,6 +167,17 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
                     $data['shipping_inpostoc3_geo_zone_api_token'][$geo_zone['geo_zone_id']] = $this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_api_token'];
                 } else {
                     $data['shipping_inpostoc3_geo_zone_api_token'][$geo_zone['geo_zone_id']] = $this->config->get('shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_api_token');
+                }
+                if (isset($this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_api_org_id'])) {
+                    $data['shipping_inpostoc3_geo_zone_api_org_id'][$geo_zone['geo_zone_id']] = $this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_api_org_id'];
+                } else {
+                    $data['shipping_inpostoc3_geo_zone_api_org_id'][$geo_zone['geo_zone_id']] = $this->config->get('shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_api_org_id');
+                }
+                // set default sending method
+                if (isset($this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_sending_method'])) {
+                    $data['shipping_inpostoc3_geo_zone_sending_method'][$geo_zone['geo_zone_id']] = $this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_sending_method'];
+                } else {
+                    $data['shipping_inpostoc3_geo_zone_sending_method'][$geo_zone['geo_zone_id']] = $this->config->get('shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_sending_method');
                 }
             }
         }
@@ -240,6 +256,12 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
         $this->model_setting_event->addEvent('inpostoc3_eventAdminViewOrderShippingBefore', 
                                                 'admin/view/sale/order_shipping/before', 
                                                 'extension/shipping/inpostoc3/eventAdminViewOrderShippingBefore');
+
+        //event for intercepting Admin controller/sale/order/shipping/before
+        $this->model_setting_event->deleteEventByCode('inpostoc3_eventAdminControllerShippingBefore');
+        $this->model_setting_event->addEvent('inpostoc3_eventAdminControllerShippingBefore', 
+                                                'admin/controller/sale/order/shipping/before', 
+                                                'extension/shipping/inpostoc3/eventAdminControllerShippingBefore');
         
     }
  
@@ -255,11 +277,70 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
         $this->model_setting_event->deleteEventByCode('inpostoc3_eventCatalogCheckoutShippingMethodAfter');
         $this->model_setting_event->deleteEventByCode('inpostoc3_eventAdminViewOrderInfoBefore');
         $this->model_setting_event->deleteEventByCode('inpostoc3_eventAdminViewOrderShippingBefore');
+        $this->model_setting_event->deleteEventByCode('inpostoc3_eventAdminControllerShippingBefore');
+    }
+    
+    // handle single order shipping
+    public function orderShipping() {
+        $this->load->language('extension/shipping/inpostoc3');
+        $this->document->setTitle($this->language->get('heading_title_order_shipping'));
+        
+        // preserve url parameters if any present
+        
+        $data = array ();
+
+        $url = $this->preserveUrlParams();
+
+        // build breadcrumbs for easy go back to orders
+        $data['breadcrumbs'] = array();
+
+		$data['breadcrumbs'][] = array(
+			'text' => $this->language->get('text_home'),
+			'href' => $this->url->link('common/dashboard', 'user_token=' . $this->session->data['user_token'], true)
+		);
+
+		$data['breadcrumbs'][] = array(
+			'text' => $this->language->get('heading_title_orders'),
+			'href' => $this->url->link('sale/order', 'user_token=' . $this->session->data['user_token'] . $url, true)
+		);
+
+        if(!isset($this->request->get['order_id'])) {
+            $data['cancel'] = $data['breadcrumbs'][1]['href'];
+        } else {
+            $data['cancel'] = $this->url->link('sale/order/info', 'user_token=' . $this->session->data['user_token'] . '&order_id=' . $this->request->get['order_id'], true);
+        }
+        
+        if( isset($this->request->get['order_id']) ) {
+            
+            $this->load->model('extension/shipping/inpostoc3');
+            $shipping_code = $this->model_extension_shipping_inpostoc3->getShippingCodeFromOrder($data['order_id']);
+            
+            $data['shipping_code'] = $shipping_code;
+
+            if( $this->isItInPostOC3Shipping($shipping_code) {
+                // $data gets filled in with service & crucial settings details
+                $shipping_code_details = explode('.',$shipping_code);
+                $this->fillDataWithDetailsFromShippingCodeDetails($shipping_code_details, $data);
+
+                // API integration enabled?
+                if( $data['shipping_inpostoc3_geo_zone_use_api'][$data['shipping_code_inpostoc3_geo_zone_id']] ) {
+                    
+                }
+
+            }
+
+
+        }
+
+        // assign the children templates and the main template of the view
+        $data['header'] = $this->load->controller('common/header');
+		$data['column_left'] = $this->load->controller('common/column_left');
+		$data['footer'] = $this->load->controller('common/footer');
+        $this->response->setOutput($this->load->view('extension/shipping/inpostoc3_order_shipping', $data));
     }
 
 
-    // Event handlers
-
+    // === Event handlers
     // admin/view/sale/order_info/before
     public function eventAdminViewOrderInfoBefore(&$route,&$data,&$template_code=null) {
         //$this->log->write(__METHOD__ .' event handler');
@@ -271,46 +352,32 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
         // order details part to be modified
         // regex to match multiline part correctly
         $search_pattern = '/{% if shipping_method %}(.*)\s*<tr>(.*)\s*<td><button data-toggle="tooltip" title="{{ text_shipping_method }}" class="btn btn-info btn-xs">(.*)\s*<td>{{ shipping_method }}(.*)\s*<\/tr>\s*{% endif %}/m';
-        
-        $matches = array();
-        preg_match_all($search_pattern, $template_buffer, $matches);        
 
         $template_buffer = preg_replace($search_pattern ,$replace_order_details, $template_buffer);
 
-        // TODO: shipping button printing dispatch note replace
-
-        $template_code = $template_buffer;
-
-        // now inject proper data
+        // now inject proper data for displaying in modified twig
         if($data['order_id']) {
             $this->load->model('extension/shipping/inpostoc3');
             $shipping_code = $this->model_extension_shipping_inpostoc3->getShippingCodeFromOrder($data['order_id']);
             $data['shipping_code'] = $shipping_code;
             
-            $shipping_code_details = explode('.',$shipping_code);
-            if($shipping_code_details[0] === 'inpostoc3') {
-                $service_details = explode('_',$shipping_code_details[1]);
-                $data['shipping_code_inpostoc3_used'] = true;
-                $data['shipping_code_inpostoc3_geo_zone_id'] = $service_details[0];
-                $data['shipping_code_inpostoc3_service_id'] = $service_details[1];
-                $data['shipping_code_inpostoc3_service_identifier'] = $this->model_extension_shipping_inpostoc3->getServiceIdentifier($service_details[1]);
-                $data['shipping_code_inpostoc3_parcel_template_identifier'] = $service_details[2];
-                $data['shipping_code_inpostoc3_target_point'] = $shipping_code_details[2];
-                // todo: 
-                // read sending_method and sending_point if applicable;
-                // read target point address details if API enabled
-                $this->load->language('extension/shipping/inpostoc3');
-                $data['text_selected_target_point'] = $this->language->get('text_selected_target_point');
-                $data['text_'. $data['shipping_code_inpostoc3_service_identifier'] .'_description'] = $this->language->get('text_'. $data['shipping_code_inpostoc3_service_identifier'] .'_description');
-                $data['text_selected_sending_method'] = $this->language->get('text_selected_sending_method');
-                $data['text_selected_sending_point'] = $this->language->get('text_selected_sending_point');
-                $data['text_selected_sending_address'] = $this->language->get('text_selected_sending_address');
-                $data['text_template_description_size_'. $data['shipping_code_inpostoc3_parcel_template_identifier']] = $this->language->get('text_template_description_size_'. $data['shipping_code_inpostoc3_parcel_template_identifier']);
+            if( $this->isItInPostOC3Shipping($shipping_code) ){
                 
-                // jeśli jest API, podmienić button do printowania na submita i przekierować na kontroler do wysłania paczki, ale w sale/order/inpostoc3
+                // $data gets filled in with service & crucial settings details
+                $shipping_code_details = explode('.',$shipping_code);
+                $this->fillDataWithDetailsFromShippingCodeDetails($shipping_code_details, $data);
+                
+                
+                // Button for printing dispatch note - replace target attribute if InPost API Integration enabled
+                if( $data['shipping_inpostoc3_geo_zone_use_api'][$data['shipping_code_inpostoc3_geo_zone_id']] ) {
+                    $search_pattern ='/<a href="{{ shipping }}"\s*target="_blank"\s*data-toggle="tooltip"\s*title="{{ button_shipping_print }}"/m';
+                    $replace_button_target ='<a href="{{ shipping }}" data-toggle="tooltip" title="{{ button_shipping_print }}"';
+                    $template_buffer = preg_replace($search_pattern ,$replace_button_target, $template_buffer);
+                }    
             }
-
         }
+
+        $template_code = $template_buffer; 
 
         return null;
     }
@@ -324,11 +391,11 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
             $this->load->language('extension/shipping/inpostoc3');
             // arm standard dispatch note with some handful info for manual parcel sending
             foreach($data['orders'] as &$order) {
-                $this->log->write('order id found: '.$order['order_id']);
+                //$this->log->write('order id found: '.$order['order_id']);
                 $shipping_code = $this->model_extension_shipping_inpostoc3->getShippingCodeFromOrder($order['order_id']);
-                $shipping_code_details = explode('.',$shipping_code);
-                if($shipping_code_details[0] === 'inpostoc3') {
-
+                
+                if($this->isItInPostOC3Shipping($shipping_code)) {
+                    $shipping_code_details = explode('.',$shipping_code);
                     $service_details = explode('_',$shipping_code_details[1]);
 
                     $str = "<p style=\"margin-left: 10px\">
@@ -343,6 +410,44 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
             }
 
         }
+    }
+
+    // admin/controller/sale/order/shipping/before
+    public function eventAdminControllerShippingBefore(&$route,&$data) {
+        $this->log->write('Route: ' . $route .', Args: ' . print_r($data,true));
+        $ret = null;
+
+        if ($this->request->server['HTTPS']) {
+			$data['base'] = HTTPS_SERVER;
+		} else {
+			$data['base'] = HTTP_SERVER;
+		}
+        // GET == single order dispatch note action
+        if( isset($this->request->get['order_id']) ) {
+            
+            $order_id = $this->request->get['order_id'];
+            $this->load->model('extension/shipping/inpostoc3');
+            $shipping_code = $this->model_extension_shipping_inpostoc3->getShippingCodeFromOrder($order_id);
+            
+            if( $this->isItInPostOC3Shipping($shipping_code) ) {
+                
+                // $data gets filled in with service & crucial settings details
+                $shipping_code_details = explode('.',$shipping_code);
+                $this->fillDataWithDetailsFromShippingCodeDetails($shipping_code_details, $data);
+                
+                // API integration enabled?
+                if( $data['shipping_inpostoc3_geo_zone_use_api'][$data['shipping_code_inpostoc3_geo_zone_id']] ) {
+                    // break controller chain - return non-null value
+                    $ret = $data;
+                    // redirect to extension/shipping/inpostoc3/ordershipping
+                    $url = '';
+                    $url .= '&order_id=' . $order_id;
+                    $this->response->redirect($this->url->link('extension/shipping/inpostoc3/ordershipping','user_token=' . $this->session->data['user_token'] . $url, true));
+                }
+            }
+        }
+        // else continue with default behaviour
+        return $ret;
     }
 
 
@@ -364,6 +469,94 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
     // 2.2.1.2 (dispatch_order) - na razie zostawić w spokoju, w przyszlosci selekcja adresu store jako punktu, do ktorego ma przyjechac kurier po paczke
     // 2.2.2 jesli shipment do danego ordera juz istnieje, to tylko strzal via API po PDF z labelem
 
+    // == general helpers
+    protected function preserveUrlParams() {
+        $url = '';
+
+        // Sale/Order section params
+		if (isset($this->request->get['filter_order_id'])) {
+			$url .= '&filter_order_id=' . $this->request->get['filter_order_id'];
+		}
+
+		if (isset($this->request->get['filter_customer'])) {
+			$url .= '&filter_customer=' . urlencode(html_entity_decode($this->request->get['filter_customer'], ENT_QUOTES, 'UTF-8'));
+		}
+
+		if (isset($this->request->get['filter_order_status'])) {
+			$url .= '&filter_order_status=' . $this->request->get['filter_order_status'];
+		}
+	
+		if (isset($this->request->get['filter_order_status_id'])) {
+			$url .= '&filter_order_status_id=' . $this->request->get['filter_order_status_id'];
+		}
+			
+		if (isset($this->request->get['filter_total'])) {
+			$url .= '&filter_total=' . $this->request->get['filter_total'];
+		}
+
+		if (isset($this->request->get['filter_date_added'])) {
+			$url .= '&filter_date_added=' . $this->request->get['filter_date_added'];
+		}
+
+		if (isset($this->request->get['filter_date_modified'])) {
+			$url .= '&filter_date_modified=' . $this->request->get['filter_date_modified'];
+		}
+
+		if (isset($this->request->get['sort'])) {
+			$url .= '&sort=' . $this->request->get['sort'];
+		}
+
+		if (isset($this->request->get['order'])) {
+			$url .= '&order=' . $this->request->get['order'];
+		}
+
+		if (isset($this->request->get['page'])) {
+			$url .= '&page=' . $this->request->get['page'];
+		}
+        // endof Sale/Order section params
+
+        return $url;
+    }
+
+    protected function isItInPostOC3Shipping($shipping_code) {
+        $ret = false;
+        $shipping_code_details = explode('.',$shipping_code);
+        if($shipping_code_details[0] === 'inpostoc3') {
+            $ret = true;
+        }
+        return $ret;
+    }
+
+    protected function fillDataWithDetailsFromShippingCodeDetails($shipping_code_details, &$data) {
+        
+        $ret = null;
+        if(isset($shipping_code_details) && count($shipping_code_details) >=3) {
+            $service_details = explode('_',$shipping_code_details[1]);
+            $data['shipping_code_inpostoc3_used'] = true;
+            $data['shipping_code_inpostoc3_geo_zone_id'] = $service_details[0];
+            $data['shipping_code_inpostoc3_service_id'] = $service_details[1];
+            // hate to reload model multiple times, anyway to set it once as a class property?
+            $this->load->model('extension/shipping/inpostoc3');
+            $data['shipping_code_inpostoc3_service_identifier'] = $this->model_extension_shipping_inpostoc3->getServiceIdentifier($service_details[1]);
+            $data['shipping_code_inpostoc3_parcel_template_identifier'] = $service_details[2];
+            $data['shipping_code_inpostoc3_target_point'] = $shipping_code_details[2];
+            $data['shipping_inpostoc3_geo_zone_use_api'][$data['shipping_code_inpostoc3_geo_zone_id']] = $this->config->get('shipping_inpostoc3_' . $data['shipping_code_inpostoc3_geo_zone_id'] . '_use_api');
+            
+            // todo: 
+            // read sending_method and sending_point if applicable;
+            // read target point address details if API enabled
+            $this->load->language('extension/shipping/inpostoc3');
+            $data['text_selected_target_point'] = $this->language->get('text_selected_target_point');
+            $data['text_'. $data['shipping_code_inpostoc3_service_identifier'] .'_description'] = $this->language->get('text_'. $data['shipping_code_inpostoc3_service_identifier'] .'_description');
+            $data['text_selected_sending_method'] = $this->language->get('text_selected_sending_method');
+            $data['text_selected_sending_point'] = $this->language->get('text_selected_sending_point');
+            $data['text_selected_sending_address'] = $this->language->get('text_selected_sending_address');
+            $data['text_template_description_size_'. $data['shipping_code_inpostoc3_parcel_template_identifier']] = $this->language->get('text_template_description_size_'. $data['shipping_code_inpostoc3_parcel_template_identifier']);
+        
+            $ret = $service_details;
+        }
+        return $ret;  
+    }
 
     // == helper functions as per https://forum.opencart.com/viewtopic.php?f=144&t=221533 to modify original twig
     //
