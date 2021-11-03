@@ -3,7 +3,9 @@
   <div class="page-header">
     <div class="container-fluid">
       <div class="pull-right">
+        {% if inpostoc3_can_edit_shipment %}
         <button type="submit" form="form-inpostoc3-order-shipping" data-toggle="tooltip" title="{{ button_save }}" class="btn btn-primary" formaction="{{ action_save }}"><i class="fa fa-save"></i></button>
+        {% endif %}
         <!-- <button type="submit" form="form-inpostoc3-order-shipping" data-toggle="tooltip" title="{{ button_shipping_print }}" class="btn btn-primary" formaction="{{ action_dispatch }}"><i class="fa fa-truck"></i></button> -->
         <a href="{{ cancel }}" data-toggle="tooltip" title="{{ button_cancel }}" class="btn btn-default"><i class="fa fa-reply"></i></a>
       </div>
@@ -22,19 +24,132 @@
     </div>
     {% endif %}
     {% if shipping_code_inpostoc3_used %}
-    <!-- Sending details -->
+    <!-- Shipments -->
     <div class="panel panel-default">
       <div class="panel-heading">
-        <h3 class="panel-title"><i class="fa fa-pencil"></i> {{ text_sending_method_details }}</h3>
+        <h3 class="panel-title"><i class="fa 
+        {% if inpostoc3_can_edit_shipment %}
+        fa-pencil
+        {% else %}
+        fa-info-circle
+        {% endif %}
+        "></i>Order (#{{ order_id }})</h3>
       </div>
     </div>
-    <div class="panel-body">
-      <form method="post" enctype="multipart/form-data" id="form-inpostoc3-order-shipping" class="form-horizontal">
-        <div class="row">
+
+    <div class="row">
+      <div class="col-md-4">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h3 class="panel-title">{{ text_sending_method_details }}</h3>
+          </div>
+          <table class="table">
+            <tbody>
+              <tr></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h3 class="panel-title">{{ text_send_from }}</h3>
+          </div>
+          <table class="table">
+            <tbody>
+              <tr></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h3 class="panel-title">{{ text_send_to }}</h3>
+          </div>
+          <table class="table">
+            <tbody>
+              <tr></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div id="inpost-geowidget" style="display: none;"></div>
+    </div>
+
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title"><i class="fa fa-list"></i>{{ text_shipments }}</h3>
+      </div>
+      <div class="panel-body">
+        <!-- foreach shipment display div with shipment data + table with parcels-->
+        <div class="align-items-center">
+          <table class="table table-bordered">
+            <thead style="background-color: #f6f6f6;">
+              <tr>
+                <td class="text-left text-uppercase">
+                  {{ text_shipment_number }}: numerek tutaj
+                </td>
+                <td class="text-left text-uppercase">
+                  {{ text_shipment_tracking_number }}: numerek tutaj
+                </td>
+                <td></td>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colspan="3">
+                  <table class="table table-md table-hover">
+                    <thead>
+                      <tr>
+                        <td class="text-left">{{ text_template_description }}</td>
+                        <td class="text-left">{{ text_parcel_number }}</td>
+                        <td class="text-left">{{ text_parcel_tracking_number }}</td>
+                        <td></td>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <!--for each parcel generate tr-->
+                      <tr>
+                        <td class="text-left">
+                          {% if inpostoc3_can_edit_shipment %}
+                          <select>
+                            <option>opcja</option>
+                          </select>
+                          {% else %}
+                          {{ text_template_description }}
+                          {% endif %}
+                        </td>
+                        <td class="text-left">{{ text_parcel_number }}
+
+                        </td>
+                        <td class="text-left">{{ text_parcel_tracking_number }}
+
+                        </td>
+                        <td></td>
+                      </tr>
+                      <!-- future: add as a last row in table ability to add parcels to shipment if this is not inpost_locker_service and not yet shipped/registered via API-->
+                    </tbody>
+                  </table>
+                </td>
+              </tr>
+            </tbody>
+          </table>
 
         </div>
-      </form>
+        <!-- add ability to add another shipment to order in future, for orders split to a couple of shipments and shipment not registered yet via API-->
+        
+      </div>
     </div>
+
+    {% if inpostoc3_can_edit_shipment %}
+    <form method="post" enctype="multipart/form-data" id="form-inpostoc3-order-shipping-{{ order_id }}" class="col-md-12">
+    </form>
+    {% endif %}
+
     {% endif %}
   </div>
 </div>

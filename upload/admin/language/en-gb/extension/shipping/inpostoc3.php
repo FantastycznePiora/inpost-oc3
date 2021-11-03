@@ -1,7 +1,7 @@
 <?php
 // Heading
 $_['heading_title'] = 'InPost for OpenCart3 Shipping Extension';
-$_['heading_title_order_shipping'] = 'Ship Order via InPost Integration';
+$_['heading_title_order_shipping'] = 'InPost: Ship Order';
 $_['heading_title_orders'] = 'Orders';
 
 // Text
@@ -17,9 +17,9 @@ $_['text_no']          = 'No';
 $_['text_inpost_locker_standard_name']              = 'ParcelLocker Standard'; //'Paczkomatowa standardowa'
 $_['text_inpost_locker_standard_description']       = 'ParcelLocker standard shipment'; // 'Przesyłka paczkomatowa standardowa'
 $_['text_template_description']                     = 'Parcel template';
-$_['text_template_description_small']               = 'small'; // Gabaryt A  
-$_['text_template_description_medium']              = 'medium'; // Gabaryt B  
-$_['text_template_description_large']               = 'large'; // Gabaryt C  
+$_['text_template_description_small']               = 'Small'; // Gabaryt A  
+$_['text_template_description_medium']              = 'Medium'; // Gabaryt B  
+$_['text_template_description_large']               = 'Large'; // Gabaryt C  
 $_['text_template_description_size_small']          = 'Parcel template size: small'; // Gabaryt A  
 $_['text_template_description_size_medium']         = 'Parcel template size: medium'; // Gabaryt B  
 $_['text_template_description_size_large']          = 'Parcel template size: large'; // Gabaryt C  
@@ -29,7 +29,14 @@ $_['text_selected_sending_point']                   = 'Selected sending point';
 $_['text_selected_sending_address']                 = 'Selected sending address';
 $_['text_service_identifier']                       = 'Service identifier';
 $_['text_sending_method_parcel_locker']             = 'I will post a package at parcel locker'; // 'Nadam przesyłkę w Paczkomacie'
+$_['text_shipments']                                = 'Shipments';
+$_['text_send_from']                                = 'Send from'; // 'Nadanie z'
 $_['text_sending_method_details']                   = 'Sending method details';
+$_['text_send_to']                                  = 'Send to';
+$_['text_shipment_number']                          = 'Shipment number';
+$_['text_shipment_tracking_number']                 = 'Shipment tracking number';
+$_['text_parcel_number']                            = 'Parcel number';
+$_['text_parcel_tracking_number']                   = 'Parcel tracking number';
 
 // Entry
 $_['entry_status']                                  = 'Status';
@@ -48,7 +55,6 @@ $_['entry_api_endpoint']                            = 'API address';
 $_['entry_api_token']                               = 'API Token';
 $_['entry_api_org_id']                              = 'API organization id';
 $_['entry_sending_method_parcel_locker']            = 'Post at parcel locker';  // 'Nadanie w Paczkomacie'
-$_['entry_sendfrom']                                = 'Send from'; // 'Nadanie z'
 
 // Help
 $_['help_rate']                                     = 'Example: small:10.00,medium:12.00 Parcel template size:Cost,Parcel template size:Cost, etc...';

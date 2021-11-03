@@ -11,13 +11,8 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
         $this->load->model('setting/setting');
 
         //specific inpostoc3 model
-        //$this->log->write(print_r('controller\extension\shipping\inpostoc3 index before model load', true));
         $this->load->model('extension/shipping/inpostoc3');
-        $inpost_services = $this->model_extension_shipping_inpostoc3->getServicesWithAssocAttributes();
-        //$inpost_parcel_templates = $this->model_extension_shipping_inpostoc3->getParcelTemplates();
-        //$this->log->write(print_r($this->model_extension_shipping_inpostoc3->getServices(), true));
-        //$this->log->write(print_r($this->model_extension_shipping_inpostoc3->getParcelTemplates(), true));
-        
+        $inpost_services = $this->model_extension_shipping_inpostoc3->getServicesWithAssocAttributes();       
         
         if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validate()) {
 			$this->model_setting_setting->editSetting('shipping_inpostoc3', $this->request->post);
@@ -262,7 +257,6 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
 
     }
  
-
     public function install() {
         /*$this->load->model('setting/setting');
         $this->model_setting_setting->editSetting('inpostoc3', ['inpostoc3_status'=>1]);*/
@@ -316,8 +310,7 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
     public function orderShipping() {
         $this->load->language('extension/shipping/inpostoc3');
         $this->document->setTitle($this->language->get('heading_title_order_shipping'));
-
-        $this->load->model('extension/shipping/inpostoc3');
+             
         /*
         if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validate()) {
 			//$this->model_setting_setting->editSetting('shipping_inpostoc3', $this->request->post);
@@ -364,8 +357,14 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
             $data['order_id'] = $this->request->get['order_id'];
             $data['cancel'] = $this->url->link('sale/order/info', 'user_token=' . $this->session->data['user_token'] . '&order_id=' . $data['order_id'], true);
         }
+
+        $this->load->model('extension/shipping/inpostoc3');
+        $inpost_services = $this->model_extension_shipping_inpostoc3->getServicesWithAssocAttributes();
+        // expose variable for template
+        $data['inpost_services'] =  $inpost_services;  
         
-        $data['text_sending_method_details'] = $this->language->get('text_sending_method_details');
+        $data["inpostoc3_can_edit_shipment"] = true;
+        // TODO: check later if it is not present or in draft status
 
         if( isset($this->request->get['order_id']) ) {
             
@@ -378,7 +377,7 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
                 $shipping_code_details = explode('.',$shipping_code);
                 $this->fillDataWithDetailsFromShippingCodeDetails($shipping_code_details, $data);
 
-                $data['inpostoc3_services'] = $this->model_extension_shipping_inpostoc3->getServices();
+                
                 /*foreach( $data['inpostoc3_services'] as $service ) {
                     if ( isset($this->request->post['inpostoc3_service_id_'.$service['service_identifier']]) ) {
                         $data['shipping_code_inpostoc3_service_id'] = $this->request->post['inpostoc3_service_id_'.$service['service_identifier']];
@@ -386,18 +385,18 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
                     } else {
 
                     }
-                */
+                
 
-                    $data['inpostoc3_'.$service['service_identifier'].'_id'] = $service['id'];
-                }
-
+                    //$data['inpostoc3_'.$service['service_identifier'].'_id'] = $service['id'];
+                }*/
+                /*
                 foreach ($inpost_service['parcel_templates'] as $parcel_template) {
                     if (isset($this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $parcel_template['id'] . '_weight_class_id'])) {
                         $data['shipping_inpostoc3_geo_zone_weight_class_id'][$geo_zone['geo_zone_id']][$parcel_template['id']] = $this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $parcel_template['id'] . '_weight_class_id'];
                     } else {
                         $data['shipping_inpostoc3_geo_zone_weight_class_id'][$geo_zone['geo_zone_id']][$parcel_template['id']] = $this->config->get('shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $parcel_template['id'] . '_weight_class_id');
                     }
-
+                */
                 // API integration enabled?
                 if( $data['shipping_inpostoc3_geo_zone_use_api'][$data['shipping_code_inpostoc3_geo_zone_id']] ) {
                     // check if shipment present in db already in 'draft' state. If not - disable truck ('dispatch' action/link) via setting a flag/manipulating truck url here

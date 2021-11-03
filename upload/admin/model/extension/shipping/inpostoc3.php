@@ -319,4 +319,8 @@ class ModelExtensionShippingInPostOC3 extends Model {
 
         return $services;
     }
+
+    public function getShipments($order_id) {
+        
+    }
 }
