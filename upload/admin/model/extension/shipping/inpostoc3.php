@@ -11,7 +11,7 @@ class ModelExtensionShippingInPostOC3 extends Model {
                 `id` INT(11) UNIQUE AUTO_INCREMENT,
                 `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 `updated_at` TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
-                `service_identifier` UNIQUE VARCHAR(100) NOT NULL,
+                `service_identifier` VARCHAR(100) UNIQUE NOT NULL,
                 INDEX(`service_identifier`),
                 PRIMARY KEY(`id`)
           ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
@@ -20,6 +20,23 @@ class ModelExtensionShippingInPostOC3 extends Model {
         $this->db->query("       
             INSERT IGNORE INTO `inpostoc3_services` (`id`,`service_identifier`) VALUES
             ( 1 , 'inpost_locker_standard' );
+        ");
+
+        $this->db->query("
+            CREATE TABLE IF NOT EXISTS `inpostoc3_services_routing` (
+                `id` INT(11) UNIQUE AUTO_INCREMENT,
+                `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
+                `service_id` INT(11) NOT NULL,
+                `sender_country_iso_code_3` CHAR(3) NOT NULL COMMENT 'ISO 3166-1 alfa-3 code',
+                `receiver_country_iso_code_3` CHAR(3) NOT NULL COMMENT 'ISO 3166-1 alfa-3 code',
+                PRIMARY KEY(`id`),
+                FOREIGN KEY (`service_id`) REFERENCES `inpostoc3_service`(`id`)
+            ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+        ");
+        $this->db->query("
+            INSERT IGNORE INTO `inpostoc3_services_routing` (`id`,`service_id`,`sender_country_iso_code_3`,`receiver_country_iso_code_3`) VALUES
+            (1,1,'POL','POL');
         ");
 
         $this->db->query("
@@ -179,19 +196,54 @@ class ModelExtensionShippingInPostOC3 extends Model {
         return $results; 
     }
 
-    public function getServicesWithAssocParcelTemplates() {
-        $services = $this->getServices();
-        $parcel_templates = $this->getParcelTemplates();
+    public function getServicesToSendingMethods($service_id=null) {
+        $sql = "
+        SELECT
+            t1.id AS service_id,
+            t1.service_identifier,
+            t3.id as sending_method_id,
+            t3.sending_method_identifier
+        FROM `inpostoc3_services` t1
+        INNER JOIN `inpostoc3_services_sending_method` AS t2
+            ON t1.id = t2.service_id
+        INNER JOIN `inpostoc3_sending_method` AS t3
+            ON t2.sending_method_id = t3.id";
 
-        foreach($services as $serviceK => $serviceV){
-            foreach($parcel_templates as $parcel_template)  {
-                if($parcel_template['service_id']===$services[$serviceK]['id']){
-                   $services[$serviceK]['parcel_templates'][$parcel_template['id']]=$parcel_template; 
-                }
-            }  
+        if($service_id) {
+            $sql = $sql . "
+            WHERE t1.id = '". int($service_id) ."'
+            "; 
         }
+        $sql = $sql . ";";
+        $query = $this->db->query ($sql);
+        $results = array();
+        foreach($query->rows as $row){
+            $results[]=$row;
+        }
+        return $results; 
+    }
 
-        return $services;
+    public function getServicesAllowedRoutes($service_id=null) {
+        $sql ="
+        SELECT 
+            t1.id,
+            t1.service_id,
+            t1.sender_country_iso_code_3,
+            t1.receiver_country_iso_code_3
+        FROM `inpostoc3_services_routing` t1
+        ";
+        if($service_id) {
+            $sql = $sql . "
+            WHERE `service_id` = '" . (int)$service_id . "'
+            ";
+        }
+        $sql = $sql . ";";
+        $query = $this->db->query ($sql);
+        $results = array();
+        foreach($query->rows as $row){
+            $results[]=$row;
+        }
+        return $results; 
     }
 
     public function getShippingCodeFromOrder($order_id) {
@@ -236,6 +288,35 @@ class ModelExtensionShippingInPostOC3 extends Model {
             }
         }
         return $result; 
+    }
 
+    public function getServicesWithAssocAttributes() {
+        $services = $this->getServices();
+        $parcel_templates = $this->getParcelTemplates();
+        $services_sending_methods = $this->getServicesToSendingMethods();
+        $services_allowed_routes = $this->getServicesAllowedRoutes();
+
+        foreach( $services as $serviceK => $serviceV ){
+            foreach($parcel_templates as $parcel_template)  {
+                if($parcel_template['service_id']===$services[$serviceK]['id']){
+                   $services[$serviceK]['parcel_templates'][$parcel_template['id']]=$parcel_template; 
+                }
+            }  
+            foreach( $services_sending_methods as $service_sending_methods ){
+                if ( $service_sending_methods['service_id']===$services[$serviceK]['id'] ) {
+                    $services[$serviceK]['sending_methods'][$service_sending_methods['sending_method_id']] = array(
+                        "sending_method_id" => $service_sending_methods['sending_method_id'],
+                        "sending_method_identifier" => $service_sending_methods['sending_method_identifier']
+                    );
+                }
+            }
+            foreach ( $services_allowed_routes as $service_allowed_routes ) {
+                if ( $service_allowed_routes['service_id']===$services[$serviceK]['id'] ) {
+                    $services[$serviceK]['allowed_routes'][$service_allowed_routes['id']] = $service_allowed_routes;
+                }
+            }
+        }
+
+        return $services;
     }
 }

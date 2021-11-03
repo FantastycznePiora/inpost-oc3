@@ -29,6 +29,7 @@ $_['text_selected_sending_point']                   = 'Selected sending point';
 $_['text_selected_sending_address']                 = 'Selected sending address';
 $_['text_service_identifier']                       = 'Service identifier';
 $_['text_sending_method_parcel_locker']             = 'I will post a package at parcel locker'; // 'Nadam przesyłkę w Paczkomacie'
+$_['text_sending_method_details']                   = 'Sending method details';
 
 // Entry
 $_['entry_status']                                  = 'Status';
@@ -47,13 +48,18 @@ $_['entry_api_endpoint']                            = 'API address';
 $_['entry_api_token']                               = 'API Token';
 $_['entry_api_org_id']                              = 'API organization id';
 $_['entry_sending_method_parcel_locker']            = 'Post at parcel locker';  // 'Nadanie w Paczkomacie'
+$_['entry_sendfrom']                                = 'Send from'; // 'Nadanie z'
 
 // Help
-$_['help_rate']        = 'Example: small:10.00,medium:12.00 Parcel template size:Cost,Parcel template size:Cost, etc...';
-$_['help_use_api']       = 'It will create shipments at InPost automatically and will allow to download PDF labels via OpenCart';
-$_['help_use_sandbox_api']       = 'If selected, Sandbox API settings will be used';
-$_['help_parcel_template_weight_class'] = 'Weight class for InPost parcel templates must be in kilograms. If not available, create weight class before using this extension.';
-$_['help_parcel_template_length_class'] = 'Length class for InPost parcel templates must be in milimeters. If not available, create length class before using this extension.';
+$_['help_rate']                                     = 'Example: small:10.00,medium:12.00 Parcel template size:Cost,Parcel template size:Cost, etc...';
+$_['help_use_api']                                  = 'It will create shipments at InPost automatically and will allow to download PDF labels via OpenCart';
+$_['help_use_sandbox_api']                          = 'If selected, Sandbox API settings will be used';
+$_['help_parcel_template_weight_class']             = 'Weight class for InPost parcel templates must be in kilograms. If not available, create weight class before using this extension.';
+$_['help_parcel_template_length_class']             = 'Length class for InPost parcel templates must be in milimeters. If not available, create length class before using this extension.';
+$_['help_sendfrom']                                 = 'Select ISO alpha 3 code for country, from which shipments are sent to receivers in this Geo Zone';
+
+// Button
+$_['button_shipping_print']                          = 'Get Label from InPost. Once done, Shipment cannot be edited.';
 
 // Error
 $_['error_permission'] = 'Warning: You do not have permission to modify InPosst OC3 shipping!';

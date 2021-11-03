@@ -3,6 +3,7 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
     private $error = array();
   
     public function index() {
+        $this->log->write(__METHOD__);
         $this->load->language('extension/shipping/inpostoc3');
         $this->document->setTitle($this->language->get('heading_title'));
 		
@@ -12,7 +13,7 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
         //specific inpostoc3 model
         //$this->log->write(print_r('controller\extension\shipping\inpostoc3 index before model load', true));
         $this->load->model('extension/shipping/inpostoc3');
-        $inpost_services = $this->model_extension_shipping_inpostoc3->getServicesWithAssocParcelTemplates();
+        $inpost_services = $this->model_extension_shipping_inpostoc3->getServicesWithAssocAttributes();
         //$inpost_parcel_templates = $this->model_extension_shipping_inpostoc3->getParcelTemplates();
         //$this->log->write(print_r($this->model_extension_shipping_inpostoc3->getServices(), true));
         //$this->log->write(print_r($this->model_extension_shipping_inpostoc3->getParcelTemplates(), true));
@@ -60,6 +61,8 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
         // configure InPost services in context of GeoZones in order to provide different rates and services enabled - framework for future extensions
         $this->load->model('localisation/geo_zone');
 		$geo_zones = $this->model_localisation_geo_zone->getGeoZones();
+        // to get country iso codes later in the loop
+        $this->load->model('localisation/country');
         
         $filter = array();
         $filter['order']='DESC';
@@ -71,13 +74,39 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
         $data['length_classes'] = $this->model_localisation_length_class->getLengthClasses($filter);
 
 
-
         foreach ($geo_zones as $geo_zone) {
             /*if (isset($this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_status'])) {
 				$data['shipping_inpostoc3_geo_zone_status'][$geo_zone['geo_zone_id']] = $this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_status'];
 			} else {
 				$data['shipping_inpostoc3_geo_zone_status'][$geo_zone['geo_zone_id']] = $this->config->get('shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_status');
 			}*/
+
+            // Is API integration allowed in this geo zone?
+            $zones_to_gz = $this->model_localisation_geo_zone->getZoneToGeoZones($geo_zone['geo_zone_id']);
+            
+            $data['shipping_inpostoc3_geo_zone_hide_api'][$geo_zone['geo_zone_id']] = false;
+            //country check for this specific geozone in order to hide/show API options
+            $inpost_allowed_api_countries = array( // TODO - instead of hardcoding, put it somewhere in DB
+                array (
+                    "iso_code_3" => "POL",
+                    "iso_code_2" => "PL"
+                )
+            );
+            // in order to have API integration enabled, all countries configured in zone->geozone must match allowed api countries list
+            foreach ($zones_to_gz as $zone)
+            {
+                foreach($inpost_allowed_api_countries as $inpost_allowed_api_country)
+                {
+                    $country = $this->model_localisation_country->getCountry( (int)$zone['country_id'] );
+                    //$data['']
+                    if ( isset($country['iso_code_3']) && ($country['iso_code_3'] != $inpost_allowed_api_country['iso_code_3']) ) {
+                        $data['shipping_inpostoc3_geo_zone_hide_api'][$geo_zone['geo_zone_id']] = true;
+                        break 2; // break immediately both loop levels, no point checking further - define geozone with allowed countries only or don't use InPost API
+                    }
+                }
+            }
+            // endof Is API integration allowed in this geo zone
+
             foreach($inpost_services as $inpost_service){
 
                 if (isset($this->request->post['shipping_inpostoc3_'. $geo_zone['geo_zone_id'] . '_' . $inpost_service['id'] . '_status'])) {
@@ -85,6 +114,18 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
                 } else {
                     $data['shipping_inpostoc3_geo_zone_status'][$geo_zone['geo_zone_id']][$inpost_service['id']] = $this->config->get('shipping_inpostoc3_'. $geo_zone['geo_zone_id'] . '_' . $inpost_service['id'] . '_status');
                 }
+                //$this->log->write('Allowed routes: '. print_r($inpost_service['allowed_routes'],true) );                
+                
+                if ( isset($this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $inpost_service['id'] . '_sendfrom']) ) {
+                    $data['shipping_inpostoc3_geo_zone_sendfrom'][$geo_zone['geo_zone_id']][$inpost_service['id']] = $this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $inpost_service['id'] . '_sendfrom'];
+                } else {
+                    $data['shipping_inpostoc3_geo_zone_sendfrom'][$geo_zone['geo_zone_id']][$inpost_service['id']] = $this->config->get('shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $inpost_service['id'] . '_sendfrom');
+                }
+                $this->log->write('
+                    Geo zone id: ' .$geo_zone['geo_zone_id'] .',
+                    Inpost service (id, identifier): .(' .$inpost_service['id'] .', '. $inpost_service['service_identifier'] . '),
+                    Send from array: '. print_r($data['shipping_inpostoc3_geo_zone_sendfrom'],true)
+                );
 
                 // TODO: split into ABC size classess & rates or figure out system to check dimensions & weight < 25kg and do text input here
                 if (isset($this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $inpost_service['id'] . '_locker_standard_rate'])) {
@@ -93,7 +134,6 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
                     $data['shipping_inpostoc3_geo_zone_locker_standard_rate'][$geo_zone['geo_zone_id']][$inpost_service['id']] = $this->config->get('shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $inpost_service['id'] .'_locker_standard_rate');
                 }
 
- 
                 foreach ($inpost_service['parcel_templates'] as $parcel_template) {
                     if (isset($this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $parcel_template['id'] . '_weight_class_id'])) {
                         $data['shipping_inpostoc3_geo_zone_weight_class_id'][$geo_zone['geo_zone_id']][$parcel_template['id']] = $this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $parcel_template['id'] . '_weight_class_id'];
@@ -108,23 +148,14 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
                         $data['shipping_inpostoc3_geo_zone_length_class_id'][$geo_zone['geo_zone_id']][$parcel_template['id']] = $this->config->get('shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $parcel_template['id'] . '_length_class_id');
                     }
                 }
-
+                        // TODO
                         // add max_height, max_width, max_length for mm
                         // add max_weight for kg
                         // these will determine wheter to use template small/medium/large and usually should be ca 2cm under default limits
 
             }
                        
-            //country check for this specific geozone in order to hide/show API options
-            $data['shipping_inpostoc3_geo_zone_hide_api'][$geo_zone['geo_zone_id']] = false;
-            $zones_to_gz = $this->model_localisation_geo_zone->getZoneToGeoZones($geo_zone['geo_zone_id']);
-
-            foreach ($zones_to_gz as $zone)
-            {
-                if((int)$zone['country_id'] != 170 ) {
-                    $data['shipping_inpostoc3_geo_zone_hide_api'][$geo_zone['geo_zone_id']] = true;
-                }
-            }
+            // hide api options if cannot be used with particular geozone 
             if ($data['shipping_inpostoc3_geo_zone_hide_api'][$geo_zone['geo_zone_id']] == true){
                 $data['shipping_inpostoc3_geo_zone_use_api'][$geo_zone['geo_zone_id']] = 0;
                 $data['shipping_inpostoc3_geo_zone_use_sandbox_api'][$geo_zone['geo_zone_id']] = 0;
@@ -184,7 +215,6 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
         // expose variables for template
         $data['geo_zones'] = $geo_zones;
         $data['inpost_services'] =  $inpost_services;
-        //$data['inpost_parcel_templates'] = $inpost_parcel_templates;
         
         // general extension status
         if (isset($this->request->post['shipping_inpostoc3_status'])) {
@@ -220,7 +250,9 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
     }
   
     public function validate() {
-        //TODO maybe add ParcelLocker  size/class validations here?
+        //TODO 
+        // add ParcelLocker  size/class validations
+        // add SendFrom field validation
         if (!$this->user->hasPermission('modify', 'extension/shipping/inpostoc3')) {
 			$this->error['warning'] = $this->language->get('error_permission');
 		}
@@ -234,7 +266,7 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
     public function install() {
         /*$this->load->model('setting/setting');
         $this->model_setting_setting->editSetting('inpostoc3', ['inpostoc3_status'=>1]);*/
-        $this->log->write(print_r('controller\extension\shipping\inpostoc3 install before db install', true));
+
         $this->load->model('extension/shipping/inpostoc3');
         $this->model_extension_shipping_inpostoc3->install();
         
@@ -268,7 +300,7 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
     public function uninstall() {
         /*$this->load->model('setting/setting');
         $this->model_setting_setting->deleteSetting(‘inpostoc3’);*/
-        $this->log->write(print_r('controller\extension\shipping\inpostoc3 uninstall before db uninstall', true));
+
         $this->load->model('extension/shipping/inpostoc3');
         $this->model_extension_shipping_inpostoc3->uninstall();
 
@@ -284,11 +316,26 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
     public function orderShipping() {
         $this->load->language('extension/shipping/inpostoc3');
         $this->document->setTitle($this->language->get('heading_title_order_shipping'));
-        
-        // preserve url parameters if any present
+
+        $this->load->model('extension/shipping/inpostoc3');
+        /*
+        if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validate()) {
+			//$this->model_setting_setting->editSetting('shipping_inpostoc3', $this->request->post);
+            // save data ^^
+			$this->session->data['success'] = $this->language->get('text_success');
+
+			$this->response->redirect($this->url->link('sale/order/info', 'user_token=' . $this->session->data['user_token'] . '&type=shipping', true));
+		}*/
         
         $data = array ();
+        
+        if (isset($this->error['warning'])) {
+			$data['error_warning'] = $this->error['warning'];
+		} else {
+			$data['error_warning'] = '';
+		}
 
+        // preserve url parameters if any present
         $url = $this->preserveUrlParams();
 
         // build breadcrumbs for easy go back to orders
@@ -304,27 +351,59 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
 			'href' => $this->url->link('sale/order', 'user_token=' . $this->session->data['user_token'] . $url, true)
 		);
 
+        // set up the action_ variables to make sure that the form is submitted to proper method. 
+        // take users back to the order/list of orders if they click on the Cancel button.
+        $data['action_save'] = $this->url->link('extension/shipping/inpostoc3/ordershipping', 'user_token=' . $this->session->data['user_token'], true);
+        /* redo for each associated shipment
+        $data['action_dispatch'] = $this->url->link('extension/shipping/inpostoc3/dispatchShipment', 'user_token=' . $this->session->data['user_token'], true);
+        $data['button_shipping_print'] = $this->language->get('button_shipping_print');
+        */
         if(!isset($this->request->get['order_id'])) {
             $data['cancel'] = $data['breadcrumbs'][1]['href'];
         } else {
-            $data['cancel'] = $this->url->link('sale/order/info', 'user_token=' . $this->session->data['user_token'] . '&order_id=' . $this->request->get['order_id'], true);
+            $data['order_id'] = $this->request->get['order_id'];
+            $data['cancel'] = $this->url->link('sale/order/info', 'user_token=' . $this->session->data['user_token'] . '&order_id=' . $data['order_id'], true);
         }
         
+        $data['text_sending_method_details'] = $this->language->get('text_sending_method_details');
+
         if( isset($this->request->get['order_id']) ) {
             
-            $this->load->model('extension/shipping/inpostoc3');
             $shipping_code = $this->model_extension_shipping_inpostoc3->getShippingCodeFromOrder($data['order_id']);
             
             $data['shipping_code'] = $shipping_code;
 
-            if( $this->isItInPostOC3Shipping($shipping_code) {
+            if( $this->isItInPostOC3Shipping($shipping_code) ) {
                 // $data gets filled in with service & crucial settings details
                 $shipping_code_details = explode('.',$shipping_code);
                 $this->fillDataWithDetailsFromShippingCodeDetails($shipping_code_details, $data);
 
+                $data['inpostoc3_services'] = $this->model_extension_shipping_inpostoc3->getServices();
+                /*foreach( $data['inpostoc3_services'] as $service ) {
+                    if ( isset($this->request->post['inpostoc3_service_id_'.$service['service_identifier']]) ) {
+                        $data['shipping_code_inpostoc3_service_id'] = $this->request->post['inpostoc3_service_id_'.$service['service_identifier']];
+                        $data['inpostoc3_service_id_'.$service['service_identifier']] = $this->request->post['inpostoc3_service_id_'.$service['service_identifier']];
+                    } else {
+
+                    }
+                */
+
+                    $data['inpostoc3_'.$service['service_identifier'].'_id'] = $service['id'];
+                }
+
+                foreach ($inpost_service['parcel_templates'] as $parcel_template) {
+                    if (isset($this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $parcel_template['id'] . '_weight_class_id'])) {
+                        $data['shipping_inpostoc3_geo_zone_weight_class_id'][$geo_zone['geo_zone_id']][$parcel_template['id']] = $this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $parcel_template['id'] . '_weight_class_id'];
+                    } else {
+                        $data['shipping_inpostoc3_geo_zone_weight_class_id'][$geo_zone['geo_zone_id']][$parcel_template['id']] = $this->config->get('shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $parcel_template['id'] . '_weight_class_id');
+                    }
+
                 // API integration enabled?
                 if( $data['shipping_inpostoc3_geo_zone_use_api'][$data['shipping_code_inpostoc3_geo_zone_id']] ) {
-                    
+                    // check if shipment present in db already in 'draft' state. If not - disable truck ('dispatch' action/link) via setting a flag/manipulating truck url here
+                    // get sending methods for service                    
+                    // prep all fields required to build an InPost API request later - prep for saving in DB any updates
+
                 }
 
             }
