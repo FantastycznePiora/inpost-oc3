@@ -375,6 +375,54 @@ class ModelExtensionShippingInPostOC3 extends Model {
         return $result;
     }
 
+    public function createParcel($parcel) {
+
+        $sql = "
+            INSERT INTO `inpostoc3_parcels`
+            (`shipment_id`,`template_id`)
+            VALUES
+            ( 
+                '". $parcel['shipment_id'] .",
+                '". $parcel['template_id'] ."
+            );
+        ";
+        $this->db->query($sql);
+        $parcel_id = $this->db->getLastId();
+        return $parcel_id;
+    }
+
+    public function createCustomAttributes($cattr) {
+        $sql = "
+            INSERT INTO `inpostoc3_custom_attributes` 
+            (`shipment_id`,`target_point`)
+            VALUES
+            (
+                '". $cattr['id']."',
+                '". $cattr['shipment_id']."'
+            );
+        ";
+        $this->db->query($sql);
+        $cattr_id = $this->db->getLastId();
+        return $cattr_id;
+    }
+
+    public function createShipment($shipment) {
+        
+        $sql ="
+            INSERT INTO `inpostoc3_shipments` 
+            (`order_id`,`service_id`,`status`)
+            VALUES 
+            (
+                '". $shipment['order_id']."',
+                '". $shipment['service_id']."',
+                '". $shipment['status']."'
+            );
+        ";
+        $this->db->query($sql);
+        $shipment_id = $this->db->getLastId();
+        return $shipment_id;
+    }
+
     public function saveParcel($parcel) {
 
         /*$defaultParcel = array(
