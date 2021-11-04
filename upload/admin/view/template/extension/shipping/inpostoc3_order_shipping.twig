@@ -44,22 +44,22 @@
       </div>
       <div class="panel-body">
         <!-- foreach shipment display div with shipment data + table with parcels-->
-        <div class="align-items-center">
+        {% for shipment in shipments %}
+        <div class="align-items-center" id="shipment-{{ shipment.id }}">
           <table class="table table-bordered">
             <thead style="background-color: #f6f6f6;" class="panel-title">
               <tr>
                 <td class="text-left text-uppercase">
-                  {{ text_shipment_number }}: numerek tutaj
+                  {{ text_shipment_number }}: {{ shipment.number ?: text_none }}
                 </td>
                 <td class="text-left text-uppercase">
-                  {{ text_shipment_tracking_number }}: numerek tutaj
+                  {{ text_shipment_tracking_number }}: {{ shipment.tracking_number ?: text_none }}
                 </td>
-                <td></td>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td colspan="3">
+                <td colspan="2">
                   
                   <table class="table table-condensed" style="width:33%; float: left;" id="shipment-{{ order_id }}">
                     <thead>
@@ -67,13 +67,43 @@
                     </thead>
                     <tbody>
                       <tr>
-                        <td>{{ text_service }}:</td>
-                        <td>
-                          {% if inpostoc3_can_edit.service_method_details %}
-                          <select form="form-inpostoc3-order-shipping-{{ order_id }}" id="input-inpostoc3-service-{{order_id}}">
-              
+                        <td class="text-left">{{ text_service }}:</td>
+                        <td class="text-left">
+                          {% if shipment.can_edit.sending_method_details %}
+                          <select form="form-inpostoc3-order-shipping-{{ order_id }}" id="input-inpostoc3-service-{{order_id}}-{{ shipment.id }}">
+                            <option value="0"
+                            {% if not shipment.service_id or shipment.service_id == 0 %}
+                            selected="selected"
+                            {% endif %}
+                            >{{ text_none }}</option>
+                            {% for service in inpost_services %}
+                            <option value="{{ service.id }}" 
+                              {% if shipment.service_id is same as (service.id) %}
+                              selected="selected"
+                              {% endif %}
+                            >{{ attribute(_context,'text_' ~service.service_identifier~'_name') }}</option>
+                            {% endfor %}              
                           </select>
                           {% else %}
+                          {{ attribute(_context,'text_' ~service.service_identifier~'_name')  }}
+                          {% endif %}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td class="text-left">{{ text_sending_method }}:</td>
+                        <td class="text-left">
+                          {% if shipment.can_edit.sending_method_details %}
+                          <select form="form-inpostoc3-order-shipping-{{ order_id }}" id="input-inpostoc3-sending-method-{{order_id}}-{{ shipment.id }}">
+                            <option value="0"
+                            {% if not shipment.service_id or shipment.service_id == 0 %}
+                            selected="selected"
+                            {% endif %}
+                            >{{ text_none }}</option>
+                            <!-- do java script stuff here to fill sending methods according to selected service -->
+                            {% endfor %}              
+                          </select>
+                          {% else %}
+                          {{ attribute(_context,'text_' ~service.service_identifier~'_name')  }}
                           {% endif %}
                         </td>
                       </tr>
@@ -86,10 +116,11 @@
                     </thead>
                     <tbody>
                       <tr>
-                        <td>{{ text_service }}:</td>
-                        <td>
+                        <td class="text-left">{{ text_service }}:</td>
+                        <td class="text-left">
                           {% if inpostoc3_can_edit.service_method_details %}
                           <select form="form-inpostoc3-order-shipping-{{ order_id }}" id="input-inpostoc3-service-{{order_id}}">
+                            
               
                           </select>
                           {% else %}
@@ -105,8 +136,8 @@
                     </thead>
                     <tbody>
                       <tr>
-                        <td>{{ text_service }}:</td>
-                        <td>
+                        <td class="text-left">{{ text_service }}:</td>
+                        <td class="text-left">
                           {% if inpostoc3_can_edit.service_method_details %}
                           <select form="form-inpostoc3-order-shipping-{{ order_id }}" id="input-inpostoc3-service-{{order_id}}">
               
@@ -118,7 +149,6 @@
                     </tbody>
                   </table>
 
-                  <div id="inpost-geowidget" style="display: none;"></div>
                 </td>
 
                 
@@ -128,7 +158,7 @@
 
               </tr>
               <tr>
-                <td colspan="3">
+                <td colspan="2">
                   <table class="table table-md table-hover">
                     <thead>
                       <tr>
@@ -168,7 +198,7 @@
 
         </div>
         <!-- add ability to add another shipment to order in future, for orders split to a couple of shipments and shipment not registered yet via API-->
-        
+        {% endfor %}
       </div>
     </div>
 

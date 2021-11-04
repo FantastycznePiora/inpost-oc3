@@ -3,7 +3,6 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
     private $error = array();
   
     public function index() {
-        $this->log->write(__METHOD__);
         $this->load->language('extension/shipping/inpostoc3');
         $this->document->setTitle($this->language->get('heading_title'));
 		
@@ -116,11 +115,11 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
                 } else {
                     $data['shipping_inpostoc3_geo_zone_sendfrom'][$geo_zone['geo_zone_id']][$inpost_service['id']] = $this->config->get('shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $inpost_service['id'] . '_sendfrom');
                 }
-                $this->log->write('
+                /*$this->log->write('
                     Geo zone id: ' .$geo_zone['geo_zone_id'] .',
                     Inpost service (id, identifier): .(' .$inpost_service['id'] .', '. $inpost_service['service_identifier'] . '),
                     Send from array: '. print_r($data['shipping_inpostoc3_geo_zone_sendfrom'],true)
-                );
+                );*/
 
                 // TODO: split into ABC size classess & rates or figure out system to check dimensions & weight < 25kg and do text input here
                 if (isset($this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $inpost_service['id'] . '_locker_standard_rate'])) {
@@ -308,7 +307,7 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
     
     // handle single order shipping
     public function orderShipping() {
-        $this->log->write(__METHOD__ ;
+        //$this->log->write(__METHOD__);
 
         $this->load->language('extension/shipping/inpostoc3');
         $this->document->setTitle($this->language->get('heading_title_order_shipping'));
@@ -383,17 +382,30 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
                 $filter['order_id'] = $data['order_id'];
                 $data['shipments'] = $this->model_extension_shipping_inpostoc3->getShipments($filter);
                 $this->log->write('Got shipments: ' . print_r($data['shipments'],true));
-                if (!empty( $data['shipments']) ) {
+                if ( empty($data['shipments']) || !isset($data['shipments']) ) {
                     // means no draft stuff was even created, need to save one before serving the view
-                    /*$init_shipment['status'] = 'draft';
-                    $init_shipment['order_id'] = $data['order_id'];
-                    $init_shipment['service_id'] = $data['shipping_code_inpostoc3_service_id'];
+                    $new_shipment['status'] = 'draft';
+                    $new_shipment['order_id'] = $data['order_id'];
+                    $new_shipment['service_id'] = $data['shipping_code_inpostoc3_service_id'];
                     // add receiver_id from order data
-                    $init_shipment['parcels'][0]['']
-                    $this->log->write('Set initial shipment: ' . print_r($data['shipments'],true));
-                    */
+                    $new_shipment['parcels'][0]['template_id'] = $data['shipping_code_inpostoc3_parcel_template_id'];
+                    $new_shipment['custom_attributes']['target_point'] = $data['shipping_code_inpostoc3_target_point'];
+                    //$this->log->write(__METHOD__ . 'New shipment: ' . print_r($new_shipment,true));
+                    if ( $this->validateNewShipment($new_shipment) ) {
+                        $new_shipment['id'] = $this->model_extension_shipping_inpostoc3->createShipment($new_shipment);
+                        $filter['order_id'] = $data['order_id']; //just in case
+                        $data['shipments'] = $this->model_extension_shipping_inpostoc3->getShipments($filter);
+                        $this->log->write(__METHOD__ .' Created new shipment, $data[\'shipments\']: ' . print_r($data['shipments'],true));     
+                    }     
                 }
                 
+                foreach ( $data['shipments'] as $o_shipment ) {
+                    if ($o_shipment['status'] == 'draft' ) {
+                        $data['shipments'][$o_shipment['id']]['can_edit']['sending_method_details'] = true;
+                    } else {
+                        $data['shipments'][$o_shipment['id']]['can_edit']['sending_method_details'] = false;
+                    }
+                }
                 
 
                 
@@ -511,7 +523,7 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
 
     // admin/controller/sale/order/shipping/before
     public function eventAdminControllerShippingBefore(&$route,&$data) {
-        $this->log->write('Route: ' . $route .', Args: ' . print_r($data,true));
+        //$this->log->write('Route: ' . $route .', Args: ' . print_r($data,true));
         $ret = null;
 
         if ($this->request->server['HTTPS']) {
@@ -549,8 +561,8 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
 
 
     // TODO: druk listu przewozowego
-    // 1. wpiąc się na before event dla view/sale/order_shipping
-    // 2. sprawdzić, czy metoda to inpostoc3, serwis do paczek && API włączone
+    // 1. wpiąc się na before event dla view/sale/order_shipping +
+    // 2. sprawdzić, czy metoda to inpostoc3, serwis do paczek && API włączone +
     // 2.1 NIE -> dorzucić do template twig z danymi docelowego paczkomatu, na razie to bedzie wszystko - done
     // 2.2 TAK -> podmienić całościowo twig! Musi ładowac geowidget do wyboru punktów
     // 2.2.1 - Jesli shipment do danego ordera jeszcze nie istnieje w tabelkach inpost, czy dispatch_order (2) czy parcel_locker (1)
@@ -636,6 +648,11 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
             $this->load->model('extension/shipping/inpostoc3');
             $data['shipping_code_inpostoc3_service_identifier'] = $this->model_extension_shipping_inpostoc3->getServiceIdentifier($service_details[1]);
             $data['shipping_code_inpostoc3_parcel_template_identifier'] = $service_details[2];
+            $filter['service_id'] = $data['shipping_code_inpostoc3_service_id'];
+            $filter['template_identifier'] = $data['shipping_code_inpostoc3_parcel_template_identifier'];
+            $pt = $this->model_extension_shipping_inpostoc3->getParcelTemplates($filter); // for this $filter setup there must be only one
+            
+            $data['shipping_code_inpostoc3_parcel_template_id'] = $pt[0]['id'];
             $data['shipping_code_inpostoc3_target_point'] = $shipping_code_details[2];
             $data['shipping_inpostoc3_geo_zone_use_api'][$data['shipping_code_inpostoc3_geo_zone_id']] = $this->config->get('shipping_inpostoc3_' . $data['shipping_code_inpostoc3_geo_zone_id'] . '_use_api');
             
@@ -653,6 +670,32 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
             $ret = $service_details;
         }
         return $ret;  
+    }
+
+    protected function createParcel($parcel) {
+
+    }
+
+    protected function createShipment($shipment) {
+
+        if ( $this->validateNewShipment($shipment) ) {
+            $shipment['id'] = $this->model_extension_shipping_inpostoc3->createShipment($shipment);
+            foreach( $shipment['parcels'] as $parcel) {
+                $parcel['shipment_id'] = $shipment['id'];
+            }
+        }
+        
+
+    }
+
+    public function validateNewShipment($shipment) {
+
+        if ( empty($shipment['status']) || empty($shipment['order_id']) ||  empty($shipment['service_id']) ) {
+            $this->error['warning'] = $this->language->get('error_insufficient_shipment_data');
+            $this->log->write(__METHOD__ . ' ' . $this->error['warning']);
+        }
+
+        return !$this->error;
     }
 
     // == helper functions as per https://forum.opencart.com/viewtopic.php?f=144&t=221533 to modify original twig

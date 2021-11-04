@@ -67,7 +67,8 @@ $_['help_parcel_template_length_class']             = 'Length class for InPost p
 $_['help_sendfrom']                                 = 'Select ISO alpha 3 code for country, from which shipments are sent to receivers in this Geo Zone';
 
 // Button
-$_['button_shipping_print']                          = 'Get Label from InPost. Once done, Shipment cannot be edited.';
+$_['button_shipping_print']                         = 'Get Label from InPost. Once done, Shipment cannot be edited.';
 
 // Error
-$_['error_permission'] = 'Warning: You do not have permission to modify InPosst OC3 shipping!';
+$_['error_permission']                              = 'Warning: You do not have permission to modify InPosst OC3 shipping!';
+$_['error_insufficient_shipment_data']              = 'Insufficient shipment data!';

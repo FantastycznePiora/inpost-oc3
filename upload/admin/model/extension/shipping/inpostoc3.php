@@ -77,7 +77,7 @@ class ModelExtensionShippingInPostOC3 extends Model {
                 `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 `updated_at` TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
                 `service_id` INT(11) NOT NULL,
-                `template_identifier` varchar(100) NULL COMMENT 'https://dokumentacja-inpost.atlassian.net/wiki/spaces/PL/pages/11731062/1.9.1+Rozmiary+i+us+ugi+dla+przesy+ek',
+                `template_identifier` varchar(100) UNIQUE COMMENT 'https://dokumentacja-inpost.atlassian.net/wiki/spaces/PL/pages/11731062/1.9.1+Rozmiary+i+us+ugi+dla+przesy+ek',
                 `min_height` INT(3) NULL COMMENT 'mm',
                 `max_height` INT(3) NULL COMMENT 'mm',
                 `max_width` INT(3) NULL COMMENT 'mm',  
@@ -183,16 +183,21 @@ class ModelExtensionShippingInPostOC3 extends Model {
         return $results; 
     }
 
-    public function getParcelTemplates() {
-        
-        $query = $this->db->query("
-            SELECT * FROM `inpostoc3_parcel_templates`;
-        ");
-        $results = array();
+    public function getParcelTemplates( $filter = array() ) {
+        $result = null;
+        $sql = "
+            SELECT * FROM `inpostoc3_parcel_templates` 
+        ";
+        $allowed_keys = array ("id", "service_id", "template_identifier", "min_height", "max_height", "max_width", "max_length", "max_weight");
+
+        $sql = $sql . $this->sqlBuildSimpleWhere($filter, $allowed_keys) . ";";
+
+        $query = $this->db->query ($sql);
+        $result = array();
         foreach($query->rows as $row){
-            $results[]=$row;
+            $result[]=$row;
         }
-        return $results; 
+        return $result; 
     }
 
     public function getServicesToSendingMethods($service_id=null) {
@@ -324,14 +329,14 @@ class ModelExtensionShippingInPostOC3 extends Model {
         $sql = "
         SELECT * FROM `inpostoc3_parcels`
         ";
-        $allowed_keys = array ("id", "shipment_id", "number", "tracking_number");
+        $allowed_keys = array ("id", "shipment_id", "number", "tracking_number", "template_id");
 
         $sql = $sql . $this->sqlBuildSimpleWhere($filter, $allowed_keys) . ";";
 
         $query = $this->db->query ($sql);
-        $results = array();
+        $result = array();
         foreach($query->rows as $row){
-            $results[$row['id']]=$row;
+            $result[$row['id']]=$row;
         }
         return $result;
     }
@@ -339,16 +344,16 @@ class ModelExtensionShippingInPostOC3 extends Model {
     public function getCustomAttributes( $filter=array() ) {
         $result = null;
         $sql = "
-        SELECT * FROM `inpostoc3_parcels`
+        SELECT * FROM `inpostoc3_custom_attributes`
         ";
         $allowed_keys = array ("id", "shipment_id", "target_point", "dropoff_point","dispatch_order_id","allegro_user_id","allegro_transaction_id");
 
         $sql = $sql . $this->sqlBuildSimpleWhere($filter, $allowed_keys) . ";";
 
         $query = $this->db->query ($sql);
-        $results = array();
+        $result = array();
         foreach($query->rows as $row){
-            $results[$row['id']]=$row;
+            $result[]=$row;
         }
         return $result;
     }
@@ -361,15 +366,20 @@ class ModelExtensionShippingInPostOC3 extends Model {
         $allowed_keys = array ("id", "order_id", "number", "tracking_number", "receiver_id", "service_id", "is_return");
 
         $sql = $sql . $this->sqlBuildSimpleWhere($filter, $allowed_keys) . ";";
+        $this->log->write(__METHOD__ . ' $sql: ' .$sql);
 
         $query = $this->db->query ($sql);
-        $results = array();
+
+        $this->log->write(__METHOD__ . ' $query: ' . print_r($query,true));
+        $result = array();
         foreach($query->rows as $row){
             
-            $filter['shipment_id'] = $row['id'];
-            $row['parcels'] = $this->getParcels($filter);
-            $row['custom_attributes'] = $this->getCustomAttributes($filter);
-            $results[$row['id']]=$row;
+            $filter2['shipment_id'] = $row['id'];
+            $row['parcels'] = $this->getParcels($filter2);
+            $row['custom_attributes'] = $this->getCustomAttributes($filter2)[0]; // one set per shipment
+            $result[$row['id']]=$row;
+
+            $this->log->write(__METHOD__ . ' $row: ' . print_r($row,true));
 
         }
         return $result;
@@ -382,8 +392,8 @@ class ModelExtensionShippingInPostOC3 extends Model {
             (`shipment_id`,`template_id`)
             VALUES
             ( 
-                '". $parcel['shipment_id'] .",
-                '". $parcel['template_id'] ."
+                '". $parcel['shipment_id'] ."',
+                '". $parcel['template_id'] ."'
             );
         ";
         $this->db->query($sql);
@@ -397,8 +407,8 @@ class ModelExtensionShippingInPostOC3 extends Model {
             (`shipment_id`,`target_point`)
             VALUES
             (
-                '". $cattr['id']."',
-                '". $cattr['shipment_id']."'
+                '". $cattr['shipment_id']."',
+                '". $cattr['target_point']."'
             );
         ";
         $this->db->query($sql);
@@ -420,6 +430,20 @@ class ModelExtensionShippingInPostOC3 extends Model {
         ";
         $this->db->query($sql);
         $shipment_id = $this->db->getLastId();
+        
+        if($shipment_id) {
+            foreach( $shipment['parcels'] as $parcel ) {
+                $parcel['shipment_id'] = $shipment_id;
+                if( !empty($parcel['template_id']) ) {
+                    $this->createParcel($parcel);
+                }
+            }
+            if ( !empty($shipment['custom_attributes']) ) {
+                $shipment['custom_attributes']['shipment_id'] = $shipment_id;
+                $this->createCustomAttributes($shipment['custom_attributes']);
+            }
+        }
+        
         return $shipment_id;
     }
 
