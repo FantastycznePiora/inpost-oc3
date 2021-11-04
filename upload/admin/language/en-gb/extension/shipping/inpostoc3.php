@@ -27,6 +27,7 @@ $_['text_selected_target_point']                    = 'Selected target point';
 $_['text_selected_sending_method']                  = 'Selected sending method';
 $_['text_selected_sending_point']                   = 'Selected sending point';
 $_['text_selected_sending_address']                 = 'Selected sending address';
+$_['text_service']                                  = 'Service';
 $_['text_service_identifier']                       = 'Service identifier';
 $_['text_sending_method_parcel_locker']             = 'I will post a package at parcel locker'; // 'Nadam przesyłkę w Paczkomacie'
 $_['text_shipments']                                = 'Shipments';
@@ -37,6 +38,7 @@ $_['text_shipment_number']                          = 'Shipment number';
 $_['text_shipment_tracking_number']                 = 'Shipment tracking number';
 $_['text_parcel_number']                            = 'Parcel number';
 $_['text_parcel_tracking_number']                   = 'Parcel tracking number';
+
 
 // Entry
 $_['entry_status']                                  = 'Status';

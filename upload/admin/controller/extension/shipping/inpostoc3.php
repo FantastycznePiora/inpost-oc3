@@ -308,6 +308,8 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
     
     // handle single order shipping
     public function orderShipping() {
+        $this->log->write(__METHOD__ ;
+
         $this->load->language('extension/shipping/inpostoc3');
         $this->document->setTitle($this->language->get('heading_title_order_shipping'));
              
@@ -363,7 +365,8 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
         // expose variable for template
         $data['inpost_services'] =  $inpost_services;  
         
-        $data["inpostoc3_can_edit_shipment"] = true;
+        $data["inpostoc3_can_edit"]["shipment"] = true;
+        $data["inpostoc3_can_edit"]["sending_method_details"] = true;
         // TODO: check later if it is not present or in draft status
 
         if( isset($this->request->get['order_id']) ) {
@@ -376,6 +379,22 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
                 // $data gets filled in with service & crucial settings details
                 $shipping_code_details = explode('.',$shipping_code);
                 $this->fillDataWithDetailsFromShippingCodeDetails($shipping_code_details, $data);
+
+                $filter['order_id'] = $data['order_id'];
+                $data['shipments'] = $this->model_extension_shipping_inpostoc3->getShipments($filter);
+                $this->log->write('Got shipments: ' . print_r($data['shipments'],true));
+                if (!empty( $data['shipments']) ) {
+                    // means no draft stuff was even created, need to save one before serving the view
+                    /*$init_shipment['status'] = 'draft';
+                    $init_shipment['order_id'] = $data['order_id'];
+                    $init_shipment['service_id'] = $data['shipping_code_inpostoc3_service_id'];
+                    // add receiver_id from order data
+                    $init_shipment['parcels'][0]['']
+                    $this->log->write('Set initial shipment: ' . print_r($data['shipments'],true));
+                    */
+                }
+                
+                
 
                 
                 /*foreach( $data['inpostoc3_services'] as $service ) {

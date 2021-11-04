@@ -112,10 +112,9 @@ class ModelExtensionShippingInPostOC3 extends Model {
                 `updated_at` TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
                 `order_id` INT(11) NOT NULL,
                 `service_id` INT(11) NOT NULL,
-                `shipment_number` varchar(100) NULL,
+                `number` varchar(100) NULL,
                 `tracking_number` varchar(100) NULL,  
-                `shipment_status` varchar(100) NULL,
-                `tracking_status` varchar(100) NULL,
+                `status` varchar(100) NULL,
                 `receiver_id` varchar(100) NULL,
                 `additional_services` tinyint(1) DEFAULT 0,
                 `is_return` tinyint(1) DEFAULT 0,
@@ -151,8 +150,8 @@ class ModelExtensionShippingInPostOC3 extends Model {
                 `updated_at` TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
                 `shipment_id` INT(11) NOT NULL,
                 `template_id` INT(11) NOT NULL,
-                `parcel_number` varchar(100) NULL,
-                `parcel_tracking_number` varchar(100) NULL,  
+                `number` varchar(100) NULL,
+                `tracking_number` varchar(100) NULL,  
                 `is_non_standard` tinyint(1) DEFAULT 0,
                 PRIMARY KEY(`id`),
                 INDEX (`shipment_id`),
@@ -320,7 +319,180 @@ class ModelExtensionShippingInPostOC3 extends Model {
         return $services;
     }
 
-    public function getShipments($order_id) {
-        
+    public function getParcels( $filter=array() ) {
+        $result = null;
+        $sql = "
+        SELECT * FROM `inpostoc3_parcels`
+        ";
+        $allowed_keys = array ("id", "shipment_id", "number", "tracking_number");
+
+        $sql = $sql . $this->sqlBuildSimpleWhere($filter, $allowed_keys) . ";";
+
+        $query = $this->db->query ($sql);
+        $results = array();
+        foreach($query->rows as $row){
+            $results[$row['id']]=$row;
+        }
+        return $result;
+    }
+
+    public function getCustomAttributes( $filter=array() ) {
+        $result = null;
+        $sql = "
+        SELECT * FROM `inpostoc3_parcels`
+        ";
+        $allowed_keys = array ("id", "shipment_id", "target_point", "dropoff_point","dispatch_order_id","allegro_user_id","allegro_transaction_id");
+
+        $sql = $sql . $this->sqlBuildSimpleWhere($filter, $allowed_keys) . ";";
+
+        $query = $this->db->query ($sql);
+        $results = array();
+        foreach($query->rows as $row){
+            $results[$row['id']]=$row;
+        }
+        return $result;
+    }
+
+    public function getShipments($filter) {
+        $result = null;
+        $sql = "
+        SELECT * FROM `inpostoc3_shipments`
+        ";
+        $allowed_keys = array ("id", "order_id", "number", "tracking_number", "receiver_id", "service_id", "is_return");
+
+        $sql = $sql . $this->sqlBuildSimpleWhere($filter, $allowed_keys) . ";";
+
+        $query = $this->db->query ($sql);
+        $results = array();
+        foreach($query->rows as $row){
+            
+            $filter['shipment_id'] = $row['id'];
+            $row['parcels'] = $this->getParcels($filter);
+            $row['custom_attributes'] = $this->getCustomAttributes($filter);
+            $results[$row['id']]=$row;
+
+        }
+        return $result;
+    }
+
+    public function saveParcel($parcel) {
+
+        /*$defaultParcel = array(
+            "number" => null,
+            "tracking_number" => null,
+            "is_non_standard" -> 0
+        );
+        $save = array_merge($defaultParcel,$parcel);
+        */
+
+        $sql = "
+            INSERT INTO `inpostoc3_parcels` 
+            (`id`,`shipment_id`,`template_id`,`number`,`tracking_number`,`is_non_standard`)
+            VALUES 
+            ( '". $parcel['id']."','". $parcel['shipment_id']."','". $parcel['template_id']."','". $parcel['number']."','". $parcel['tracking_number']."','". $parcel['is_non_standard']."')
+            ON DUPLICATE KEY UPDATE
+              shipment_id = ". $parcel['shipment_id'] .",
+              template_id = ". $parcel['template_id'] .",
+              number = ". $parcel['tracking_number'] .",
+              tracking_number = ". $parcel['tracking_number'] .",
+              is_non_standard = ". $parcel['is_non_standard'] .";
+        ";
+        $this->db->query($sql);
+        $parcel_id = $this->db->getLastId();
+        return $parcel_id;
+    }
+
+    public function saveCustomAttributes($cattr) {
+
+        $sql = "
+            INSERT INTO `inpostoc3_custom_attributes` 
+            (`id`,`shipment_id`,`target_point`,`dropoff_point`,`sending_method`,`dispatch_order_id`,`allegro_user_id`,`allegro_transaction_id`)
+            VALUES 
+            ( 
+                '". $cattr['id']."',
+                '". $cattr['shipment_id']."',
+                '". $cattr['target_point']."',
+                '". $cattr['dropoff_point']."',
+                '". $cattr['sending_method']."',
+                '". $cattr['dispatch_order_id']."',
+                '". $cattr['allegro_user_id']."',
+                '". $cattr['allegro_transaction_id']."'
+                )
+            ON DUPLICATE KEY UPDATE
+              shipment_id = ". $cattr['shipment_id'] .",
+              target_point = ". $cattr['target_point'] .",
+              dropoff_point = ". $cattr['dropoff_point'] .",
+              sending_method = ". $cattr['sending_method'] .",
+              dispatch_order_id = ". $cattr['dispatch_order_id'] .",
+              allegro_user_id = ". $cattr['allegro_user_id'] .",
+              allegro_transaction_id = ". $cattr['allegro_transaction_id'] ."
+              ;
+        ";
+        $this->db->query($sql);
+        $cattr_id = $this->db->getLastId();
+        return $cattr_id;
+    }
+
+    public function saveShipment ($shipment) {
+
+        $sql = "
+            INSERT INTO `inpostoc3_shipments` 
+            (`id`,`order_id`,`service_id`,`number`,`tracking_number`,`status`,`receiver_id`,`additional_services`,`is_return`)
+            VALUES 
+            ( 
+            '". $shipment['id']."',
+            '". $shipment['order_id']."',
+            '". $shipment['service_id']."',
+            '". $shipment['number']."',
+            '". $shipment['tracking_number']."',
+            '". $shipment['status']."',
+            '". $shipment['receiver_id']."',
+            '". $shipment['additional_services']."',
+            '". $shipment['is_return']."'
+            )
+            ON DUPLICATE KEY UPDATE
+              service_id = ". $shipment['service_id'] .",
+              number = ". $shipment['tracking_number'] .",
+              tracking_number = ". $shipment['tracking_number'] .",
+              status = ". $shipment['status'] .",
+              receiver_id = ". $shipment['receiver_id'] .",
+              additional_services = ". $shipment['additional_services'] .",
+              is_return = ". $shipment['is_return'] ."
+              ;
+        ";
+        $this->db->query($sql);
+        $shipment_id = $this->db->getLastId();
+
+        foreach ( $shipment['parcels'] as $parcel ) {
+            $parcel['shipment_id'] = $shipment_id;
+            $this->saveParcel($parcel);
+        }
+        foreach ( $shipment['custom_attributes'] as $cattr ) {
+            $cattr['shipment_id'] = $shipment_id;
+            $this->saveCustomAttributes($cattr);
+        }
+
+        return $shipment_id;
+    }
+
+    protected function sqlBuildSimpleWhere($filter, $keys = array()  ) {
+        $sql ='';
+        $where = array();
+        if ( !empty($filter) && is_array($filter) ) {
+            foreach ( $filter as $key => $value ) {
+                if ( empty($keys) ) {
+                    $where[] = $key . " = '" . $value ."'";
+                } else if ( in_array($key, $keys) ) {
+                    $where[] = $key . " = '" . $value ."'";
+                }
+            }
+        }
+        if ( !empty($where) ) {
+            if ( empty($filter["where_operator"]) ){
+                $filter["where_operator"] = "AND";
+            }
+            $sql = " WHERE (" . implode(" ".$filter["where_operator"]." ", $where) . ")";
+        }
+        return $sql;
     }
 }

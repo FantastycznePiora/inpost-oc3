@@ -3,7 +3,7 @@
   <div class="page-header">
     <div class="container-fluid">
       <div class="pull-right">
-        {% if inpostoc3_can_edit_shipment %}
+        {% if inpostoc3_can_edit.shipment %}
         <button type="submit" form="form-inpostoc3-order-shipping" data-toggle="tooltip" title="{{ button_save }}" class="btn btn-primary" formaction="{{ action_save }}"><i class="fa fa-save"></i></button>
         {% endif %}
         <!-- <button type="submit" form="form-inpostoc3-order-shipping" data-toggle="tooltip" title="{{ button_shipping_print }}" class="btn btn-primary" formaction="{{ action_dispatch }}"><i class="fa fa-truck"></i></button> -->
@@ -24,11 +24,10 @@
     </div>
     {% endif %}
     {% if shipping_code_inpostoc3_used %}
-    <!-- Shipments -->
     <div class="panel panel-default">
       <div class="panel-heading">
         <h3 class="panel-title"><i class="fa 
-        {% if inpostoc3_can_edit_shipment %}
+        {% if inpostoc3_can_edit.shipment %}
         fa-pencil
         {% else %}
         fa-info-circle
@@ -37,49 +36,8 @@
       </div>
     </div>
 
-    <div class="row">
-      <div class="col-md-4">
-        <div class="panel panel-default">
-          <div class="panel-heading">
-            <h3 class="panel-title">{{ text_sending_method_details }}</h3>
-          </div>
-          <table class="table">
-            <tbody>
-              <tr></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="panel panel-default">
-          <div class="panel-heading">
-            <h3 class="panel-title">{{ text_send_from }}</h3>
-          </div>
-          <table class="table">
-            <tbody>
-              <tr></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="panel panel-default">
-          <div class="panel-heading">
-            <h3 class="panel-title">{{ text_send_to }}</h3>
-          </div>
-          <table class="table">
-            <tbody>
-              <tr></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <div class="row">
-      <div id="inpost-geowidget" style="display: none;"></div>
-    </div>
-
+    
+    <!-- Shipments -->
     <div class="panel panel-default">
       <div class="panel-heading">
         <h3 class="panel-title"><i class="fa fa-list"></i>{{ text_shipments }}</h3>
@@ -88,7 +46,7 @@
         <!-- foreach shipment display div with shipment data + table with parcels-->
         <div class="align-items-center">
           <table class="table table-bordered">
-            <thead style="background-color: #f6f6f6;">
+            <thead style="background-color: #f6f6f6;" class="panel-title">
               <tr>
                 <td class="text-left text-uppercase">
                   {{ text_shipment_number }}: numerek tutaj
@@ -100,6 +58,75 @@
               </tr>
             </thead>
             <tbody>
+              <tr>
+                <td colspan="3">
+                  
+                  <table class="table table-condensed" style="width:33%; float: left;" id="shipment-{{ order_id }}">
+                    <thead>
+                      <tr><td colspan="2">{{ text_sending_method_details }}</td></tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>{{ text_service }}:</td>
+                        <td>
+                          {% if inpostoc3_can_edit.service_method_details %}
+                          <select form="form-inpostoc3-order-shipping-{{ order_id }}" id="input-inpostoc3-service-{{order_id}}">
+              
+                          </select>
+                          {% else %}
+                          {% endif %}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <table class="table table-condensed" style="width:33%; float: left;" id="shipment-{{ order_id }}">
+                    <thead>
+                      <tr><td colspan="2">{{ text_send_from }}</td></tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>{{ text_service }}:</td>
+                        <td>
+                          {% if inpostoc3_can_edit.service_method_details %}
+                          <select form="form-inpostoc3-order-shipping-{{ order_id }}" id="input-inpostoc3-service-{{order_id}}">
+              
+                          </select>
+                          {% else %}
+                          {% endif %}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <table class="table table-condensed" style="width:33%; float: left;" id="shipment-{{ order_id }}">
+                    <thead>
+                      <tr><td colspan="2">{{ text_send_to }}</td></tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>{{ text_service }}:</td>
+                        <td>
+                          {% if inpostoc3_can_edit.service_method_details %}
+                          <select form="form-inpostoc3-order-shipping-{{ order_id }}" id="input-inpostoc3-service-{{order_id}}">
+              
+                          </select>
+                          {% else %}
+                          {% endif %}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <div id="inpost-geowidget" style="display: none;"></div>
+                </td>
+
+                
+
+              </tr>
+              <tr>
+
+              </tr>
               <tr>
                 <td colspan="3">
                   <table class="table table-md table-hover">
@@ -115,7 +142,7 @@
                       <!--for each parcel generate tr-->
                       <tr>
                         <td class="text-left">
-                          {% if inpostoc3_can_edit_shipment %}
+                          {% if inpostoc3_can_edit.shipment %}
                           <select>
                             <option>opcja</option>
                           </select>
@@ -145,7 +172,7 @@
       </div>
     </div>
 
-    {% if inpostoc3_can_edit_shipment %}
+    {% if inpostoc3_can_edit.shipment %}
     <form method="post" enctype="multipart/form-data" id="form-inpostoc3-order-shipping-{{ order_id }}" class="col-md-12">
     </form>
     {% endif %}
