@@ -166,21 +166,26 @@ class ModelExtensionShippingInPostOC3 extends Model {
 
     }
     
-    public function uninstall() {
+    public function uninstall($service_id=null) {
         //$this->log->write(print_r('model\extension\shipping\inpostoc3 uninstall before db uninstall', true));
         // do nothing, preserve data 
     }
 
-    public function getServices() {
+    public function getServices($filter = array()) {
         
-        $query = $this->db->query("
-            SELECT * FROM `inpostoc3_services`;
-        ");
-        $results = array();
+        $result = null;
+        $sql = "
+            SELECT * FROM `inpostoc3_services` 
+        ";
+        $allowed_keys = array ("id", "service_identifier");
+
+        $sql = $sql . $this->sqlBuildSimpleWhere($filter, $allowed_keys) . ";";
+        $query = $this->db->query($sql);
+        $result = array();
         foreach($query->rows as $row){
-            $results[]=$row;
+            $result[]=$row;
         }
-        return $results; 
+        return $result; 
     }
 
     public function getParcelTemplates( $filter = array() ) {
@@ -294,8 +299,8 @@ class ModelExtensionShippingInPostOC3 extends Model {
         return $result; 
     }
 
-    public function getServicesWithAssocAttributes() {
-        $services = $this->getServices();
+    public function getServicesWithAssocAttributes($filter=array()) {
+        $services = $this->getServices($filter);
         $parcel_templates = $this->getParcelTemplates();
         $services_sending_methods = $this->getServicesToSendingMethods();
         $services_allowed_routes = $this->getServicesAllowedRoutes();
@@ -346,7 +351,7 @@ class ModelExtensionShippingInPostOC3 extends Model {
         $sql = "
         SELECT * FROM `inpostoc3_custom_attributes`
         ";
-        $allowed_keys = array ("id", "shipment_id", "target_point", "dropoff_point","dispatch_order_id","allegro_user_id","allegro_transaction_id");
+        $allowed_keys = array ("id", "shipment_id", "target_point", "dropoff_point","sending_method","dispatch_order_id","allegro_user_id","allegro_transaction_id");
 
         $sql = $sql . $this->sqlBuildSimpleWhere($filter, $allowed_keys) . ";";
 
@@ -370,7 +375,7 @@ class ModelExtensionShippingInPostOC3 extends Model {
 
         $query = $this->db->query ($sql);
 
-        $this->log->write(__METHOD__ . ' $query: ' . print_r($query,true));
+        //$this->log->write(__METHOD__ . ' $query: ' . print_r($query,true));
         $result = array();
         foreach($query->rows as $row){
             
@@ -379,7 +384,7 @@ class ModelExtensionShippingInPostOC3 extends Model {
             $row['custom_attributes'] = $this->getCustomAttributes($filter2)[0]; // one set per shipment
             $result[$row['id']]=$row;
 
-            $this->log->write(__METHOD__ . ' $row: ' . print_r($row,true));
+            //$this->log->write(__METHOD__ . ' $row: ' . print_r($row,true));
 
         }
         return $result;

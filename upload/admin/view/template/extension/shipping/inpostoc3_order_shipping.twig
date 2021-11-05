@@ -67,10 +67,11 @@
                     </thead>
                     <tbody>
                       <tr>
-                        <td class="text-left">{{ text_service }}:</td>
+                        <td class="text-left col-md-4">{{ text_service }}:</td>
                         <td class="text-left">
                           {% if shipment.can_edit.sending_method_details %}
-                          <select form="form-inpostoc3-order-shipping-{{ order_id }}" id="input-inpostoc3-service-{{order_id}}-{{ shipment.id }}">
+                          <select form="form-inpostoc3-order-shipping-{{ order_id }}" id="input-inpostoc3-service-{{order_id}}-{{ shipment.id }}" style="
+                          width: 100%;">
                             <option value="0"
                             {% if not shipment.service_id or shipment.service_id == 0 %}
                             selected="selected"
@@ -90,17 +91,28 @@
                         </td>
                       </tr>
                       <tr>
-                        <td class="text-left">{{ text_sending_method }}:</td>
+                        <td class="text-left col-md-4">{{ text_sending_method }}:</td>
                         <td class="text-left">
                           {% if shipment.can_edit.sending_method_details %}
-                          <select form="form-inpostoc3-order-shipping-{{ order_id }}" id="input-inpostoc3-sending-method-{{order_id}}-{{ shipment.id }}">
+                          <select form="form-inpostoc3-order-shipping-{{ order_id }}" id="input-inpostoc3-sending-method-{{order_id}}-{{ shipment.id }}" style="
+                          width: 100%;">
                             <option value="0"
-                            {% if not shipment.service_id or shipment.service_id == 0 %}
+                            {% if not shipment.custom_attributes.sending_method %}
                             selected="selected"
                             {% endif %}
                             >{{ text_none }}</option>
-                            <!-- do java script stuff here to fill sending methods according to selected service -->
-                            {% endfor %}              
+                            {% for service in inpost_services %}
+                            {% if service.id == shipment.service_id %}
+                            {% for sending_method in service.sending_methods %}
+                            <option value="{{ sending_method.sending_method_id }}" 
+                            {% if shipment.custom_attributes.sending_method is same as (sending_method.sending_method_identifier) %}
+                            selected="selected"
+                            {% endif %}
+                            >{{ attribute(_context,'text_sending_method_' ~sending_method.sending_method_identifier) }}</option>
+                            {% endfor %}
+                            {% endif %}
+                            {% endfor %}
+                            <!-- after initial fill do the java script stuff here to fill sending methods according to selected service -->              
                           </select>
                           {% else %}
                           {{ attribute(_context,'text_' ~service.service_identifier~'_name')  }}

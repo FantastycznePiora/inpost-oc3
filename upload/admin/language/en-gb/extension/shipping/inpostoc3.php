@@ -29,6 +29,7 @@ $_['text_selected_sending_point']                   = 'Selected sending point';
 $_['text_selected_sending_address']                 = 'Selected sending address';
 $_['text_service']                                  = 'Service';
 $_['text_service_identifier']                       = 'Service identifier';
+$_['text_sending_method']                           = 'Sending method'; // 'Sposób nadania'
 $_['text_sending_method_parcel_locker']             = 'I will post a package at parcel locker'; // 'Nadam przesyłkę w Paczkomacie'
 $_['text_shipments']                                = 'Shipments';
 $_['text_send_from']                                = 'Send from'; // 'Nadanie z'
@@ -72,3 +73,4 @@ $_['button_shipping_print']                         = 'Get Label from InPost. On
 // Error
 $_['error_permission']                              = 'Warning: You do not have permission to modify InPosst OC3 shipping!';
 $_['error_insufficient_shipment_data']              = 'Insufficient shipment data!';
+$_['error_no_service']                              = 'No service id!';

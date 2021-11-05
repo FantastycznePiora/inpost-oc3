@@ -311,6 +311,7 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
 
         $this->load->language('extension/shipping/inpostoc3');
         $this->document->setTitle($this->language->get('heading_title_order_shipping'));
+        $this->document->addScript('view/javascript/inpostoc3.js');
              
         /*
         if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validate()) {
@@ -578,6 +579,49 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
     // 2.2.1.2 (dispatch_order) - na razie zostawić w spokoju, w przyszlosci selekcja adresu store jako punktu, do ktorego ma przyjechac kurier po paczke
     // 2.2.2 jesli shipment do danego ordera juz istnieje, to tylko strzal via API po PDF z labelem
 
+    public function validateNewShipment($shipment) {
+
+        if ( empty($shipment['status']) || empty($shipment['order_id']) ||  empty($shipment['service_id']) ) {
+            $this->error['warning'] = $this->language->get('error_insufficient_shipment_data');
+            $this->log->write(__METHOD__ . ' ' . $this->error['warning']);
+        }
+
+        return !$this->error;
+    }
+
+    // for AJAX calls and dynamic dropdown filling
+    // expecting ?route=extension/shipping/inpostoc3/sendingmethods&service_id=1&user_token=...
+    public function sendingMethods() {
+        $json = array();
+
+        if ( !isset($this->request->get['service_id']) ) {
+            $json['error']['warning'] = $this->language->get('error_no_service');
+        } else {
+            $this->load->model('extension/shipping/inpostoc3');
+            $this->load->language('extension/shipping/inpostoc3');
+            $filter['id'] = $this->request->get['service_id'];
+            $inpost_services = $this->model_extension_shipping_inpostoc3->getServicesWithAssocAttributes($filter);
+            $this->log->write(__METHOD__ . ' service: ' . print_r($inpost_services, true));
+            
+            foreach ( $inpost_services as $service ) {
+
+                $this->log->write(__METHOD__ . ' !empty: ' . print_r(!empty($service['sending_methods']), true));
+            
+                if ( !empty($service['sending_methods']) ) {
+                    
+                    foreach ( $service['sending_methods'] as $sending_method ) {
+                        $service['sending_methods'][$sending_method['sending_method_id']]['description'] = $this->language->get('text_sending_method_' . $sending_method['sending_method_identifier'] );
+                    }
+                    
+                    $json[$service['id']] = $service['sending_methods'];
+                    $this->log->write(__METHOD__ . ' json: ' . print_r($json, true));  
+                }
+            }
+        }
+        $this->response->addHeader('Content-Type: application/json');
+        $this->response->setOutput(json_encode($json));
+    }
+
     // == general helpers
     protected function preserveUrlParams() {
         $url = '';
@@ -670,32 +714,6 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
             $ret = $service_details;
         }
         return $ret;  
-    }
-
-    protected function createParcel($parcel) {
-
-    }
-
-    protected function createShipment($shipment) {
-
-        if ( $this->validateNewShipment($shipment) ) {
-            $shipment['id'] = $this->model_extension_shipping_inpostoc3->createShipment($shipment);
-            foreach( $shipment['parcels'] as $parcel) {
-                $parcel['shipment_id'] = $shipment['id'];
-            }
-        }
-        
-
-    }
-
-    public function validateNewShipment($shipment) {
-
-        if ( empty($shipment['status']) || empty($shipment['order_id']) ||  empty($shipment['service_id']) ) {
-            $this->error['warning'] = $this->language->get('error_insufficient_shipment_data');
-            $this->log->write(__METHOD__ . ' ' . $this->error['warning']);
-        }
-
-        return !$this->error;
     }
 
     // == helper functions as per https://forum.opencart.com/viewtopic.php?f=144&t=221533 to modify original twig
