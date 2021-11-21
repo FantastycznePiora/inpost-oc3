@@ -106,6 +106,31 @@ class ModelExtensionShippingInPostOC3 extends Model {
         ");
         
         $this->db->query("
+            CREATE TABLE IF NOT EXISTS `inpostoc3_address` (
+                `id` INT(11) UNIQUE AUTO_INCREMENT,
+                `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
+                `name` varchar(100) NULL,
+                `company_name` varchar(100) NULL,
+                `first_name` varchar(100) NULL,
+                `last_name` varchar(100) NULL,  
+                `phone` varchar(100) NULL,
+                `email` varchar(300) NULL,
+                `street` varchar(300) NULL,
+                `building_number` varchar(100) NULL,
+                `line1` varchar(300) NULL,
+                `line2` varchar(300) NULL,
+                `city` varchar(300) NULL,
+                `post_code` varchar(100) NULL,
+                `country_iso_code_2` CHAR(3) NULL COMMENT 'ISO 3166-1 alfa-2 code',
+                `country_iso_code_3` CHAR(3) NULL COMMENT 'ISO 3166-1 alfa-3 code',
+                `sender` tinyint(1) DEFAULT 0,
+                `receiver` tinyint(1) DEFAULT 0,
+                PRIMARY KEY(`id`)
+            ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+        ");
+        
+        $this->db->query("
             CREATE TABLE IF NOT EXISTS `inpostoc3_shipments` (
                 `id` INT(11) UNIQUE AUTO_INCREMENT,
                 `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -115,13 +140,16 @@ class ModelExtensionShippingInPostOC3 extends Model {
                 `number` varchar(100) NULL,
                 `tracking_number` varchar(100) NULL,  
                 `status` varchar(100) NULL,
-                `receiver_id` varchar(100) NULL,
+                `receiver_id` INT(11) NULL,
+                `sender_id` INT(11) NULL,
                 `additional_services` tinyint(1) DEFAULT 0,
                 `is_return` tinyint(1) DEFAULT 0,
                 PRIMARY KEY(`id`),
                 INDEX (`order_id`),
                 FOREIGN KEY (`order_id`) REFERENCES `" . DB_PREFIX . "oc_order`(`id`),
-                FOREIGN KEY (`service_id`) REFERENCES `inpostoc3_services`(`id`)
+                FOREIGN KEY (`service_id`) REFERENCES `inpostoc3_services`(`id`),
+                FOREIGN KEY (`sender_id`) REFERENCES `inpostoc3_address`(`id`),
+                FOREIGN KEY (`receiver_id`) REFERENCES `inpostoc3_address`(`id`)
             ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
         ");
 
@@ -382,6 +410,8 @@ class ModelExtensionShippingInPostOC3 extends Model {
             $filter2['shipment_id'] = $row['id'];
             $row['parcels'] = $this->getParcels($filter2);
             $row['custom_attributes'] = $this->getCustomAttributes($filter2)[0]; // one set per shipment
+            $filter3['id'] = $row['service_id'];
+            $row['service_identifier'] = $this->getServices($filter3)[0]['service_identifier']; //one set per shipment
             $result[$row['id']]=$row;
 
             //$this->log->write(__METHOD__ . ' $row: ' . print_r($row,true));
