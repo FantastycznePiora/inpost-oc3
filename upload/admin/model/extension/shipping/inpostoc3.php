@@ -30,13 +30,15 @@ class ModelExtensionShippingInPostOC3 extends Model {
                 `service_id` INT(11) NOT NULL,
                 `sender_country_iso_code_3` CHAR(3) NOT NULL COMMENT 'ISO 3166-1 alfa-3 code',
                 `receiver_country_iso_code_3` CHAR(3) NOT NULL COMMENT 'ISO 3166-1 alfa-3 code',
+                `sender_country_iso_code_2` CHAR(2) NOT NULL COMMENT 'ISO 3166-1 alfa-2 code',
+                `receiver_country_iso_code_2` CHAR(2) NOT NULL COMMENT 'ISO 3166-1 alfa-2 code',
                 PRIMARY KEY(`id`),
                 FOREIGN KEY (`service_id`) REFERENCES `inpostoc3_service`(`id`)
             ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
         ");
         $this->db->query("
-            INSERT IGNORE INTO `inpostoc3_services_routing` (`id`,`service_id`,`sender_country_iso_code_3`,`receiver_country_iso_code_3`) VALUES
-            (1,1,'POL','POL');
+            INSERT IGNORE INTO `inpostoc3_services_routing` (`id`,`service_id`,`sender_country_iso_code_3`,`receiver_country_iso_code_3`,`sender_country_iso_code_2`,`receiver_country_iso_code_2`) VALUES
+            (1,1,'POL','POL', 'PL', 'PL');
         ");
 
         $this->db->query("
@@ -124,8 +126,6 @@ class ModelExtensionShippingInPostOC3 extends Model {
                 `post_code` varchar(100) NULL,
                 `country_iso_code_2` CHAR(3) NULL COMMENT 'ISO 3166-1 alfa-2 code',
                 `country_iso_code_3` CHAR(3) NULL COMMENT 'ISO 3166-1 alfa-3 code',
-                `sender` tinyint(1) DEFAULT 0,
-                `receiver` tinyint(1) DEFAULT 0,
                 PRIMARY KEY(`id`)
             ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
         ");
@@ -140,10 +140,10 @@ class ModelExtensionShippingInPostOC3 extends Model {
                 `number` varchar(100) NULL,
                 `tracking_number` varchar(100) NULL,  
                 `status` varchar(100) NULL,
-                `receiver_id` INT(11) NULL,
-                `sender_id` INT(11) NULL,
                 `additional_services` tinyint(1) DEFAULT 0,
                 `is_return` tinyint(1) DEFAULT 0,
+                `sender_id` INT(11) NOT NULL,
+                `receiver_id` INT(11) NOT NULL,
                 PRIMARY KEY(`id`),
                 INDEX (`order_id`),
                 FOREIGN KEY (`order_id`) REFERENCES `" . DB_PREFIX . "oc_order`(`id`),
@@ -391,15 +391,55 @@ class ModelExtensionShippingInPostOC3 extends Model {
         return $result;
     }
 
+    public function getAddresses($filter) {
+        $result = null;
+        $sql = "
+        SELECT * FROM `inpostoc3_address`
+        ";
+        $allowed_keys = array ("id", "name", "company_name", "first_name", "last_name", "phone", "email", "street", "building_number", "line1", "line2", "city", "post_code", "country_iso_code_2", "country_iso_code_3", "sender", "receiver");
+
+        $sql = $sql . $this->sqlBuildSimpleWhere($filter, $allowed_keys) . ";";
+        //$this->log->write(__METHOD__ . ' $sql: ' .$sql);
+
+        $query = $this->db->query ($sql);
+
+        //$this->log->write(__METHOD__ . ' $query: ' . print_r($query,true));
+        $result = array();
+        foreach($query->rows as $row){           
+            $result[]=$row;
+        }
+        return $result;
+    }
+
+    public function getRoutes($filter) {
+        $result = null;
+        $sql = "
+        SELECT * FROM `inpostoc3_services_routing`
+        ";
+        $allowed_keys = array ("id", "service_id", "sender_country_iso_code_3", "receiver_country_iso_code_3","sender_country_iso_code_2", "receiver_country_iso_code_2");
+
+        $sql = $sql . $this->sqlBuildSimpleWhere($filter, $allowed_keys) . ";";
+        $this->log->write(__METHOD__ . ' $sql: ' .$sql);
+
+        $query = $this->db->query ($sql);
+
+        $this->log->write(__METHOD__ . ' $query: ' . print_r($query,true));
+        $result = array();
+        foreach($query->rows as $row){           
+            $result[]=$row;
+        }
+        return $result;
+    }
+
     public function getShipments($filter) {
         $result = null;
         $sql = "
         SELECT * FROM `inpostoc3_shipments`
         ";
-        $allowed_keys = array ("id", "order_id", "number", "tracking_number", "receiver_id", "service_id", "is_return");
+        $allowed_keys = array ("id", "order_id", "number", "tracking_number", "receiver_id", "sender_id", "service_id", "is_return");
 
         $sql = $sql . $this->sqlBuildSimpleWhere($filter, $allowed_keys) . ";";
-        $this->log->write(__METHOD__ . ' $sql: ' .$sql);
+        //$this->log->write(__METHOD__ . ' $sql: ' .$sql);
 
         $query = $this->db->query ($sql);
 
@@ -410,10 +450,21 @@ class ModelExtensionShippingInPostOC3 extends Model {
             $filter2['shipment_id'] = $row['id'];
             $row['parcels'] = $this->getParcels($filter2);
             $row['custom_attributes'] = $this->getCustomAttributes($filter2)[0]; // one set per shipment
-            $filter3['id'] = $row['service_id'];
-            $row['service_identifier'] = $this->getServices($filter3)[0]['service_identifier']; //one set per shipment
-            $result[$row['id']]=$row;
+            if (!empty($row['service_id']) ) {
+                $filter3['id'] = $row['service_id'];
+                $row['service_identifier'] = $this->getServices($filter3)[0]['service_identifier']; //one set per shipment
+            }
+            if (!empty($row['sender_id']) ) {
+                $filter3['id'] = $row['sender_id'];
+                $row['sender'] = $this->getAddresses($filter3)[0]; // one sender
+            }
+            if (!empty($row['receiver_id']) ) {
+                $filter3['id'] = $row['receiver_id'];
+                $row['receiver'] = $this->getAddresses($filter3)[0]; // one receiver
+            }
 
+            $result[$row['id']]=$row;
+            
             //$this->log->write(__METHOD__ . ' $row: ' . print_r($row,true));
 
         }
@@ -451,16 +502,45 @@ class ModelExtensionShippingInPostOC3 extends Model {
         return $cattr_id;
     }
 
+    public function createAddress($addr) {
+        //add key check vs allowed keys
+        $columns = implode("`, `",array_keys($addr));
+        foreach($addr as $i => $val) {
+            $escaped_values[] = $this->db->escape($val); //instad of array_map, as uses $this->db->escape for conformity with OC3 framework
+        }
+        $values = implode("', '", $escaped_values );
+        //$this->log->write(__METHOD__ . '$escaped_values: ' . print_r($escaped_values,true));
+        $sql = "
+            INSERT INTO `inpostoc3_address`
+            (`$columns`)
+            VALUES
+            ('$values');
+        ";
+        //$this->log->write(__METHOD__ . 'sql: ' . print_r($sql,true));
+        $this->db->query($sql);
+        $addr_id = $this->db->getLastId();
+        return $addr_id;
+    }
+
     public function createShipment($shipment) {
         
+        if ( !empty($shipment['receiver']) ) {
+            $shipment['receiver_id'] = $this->createAddress($shipment['receiver']);
+        }
+        if ( !empty($shipment['sender']) ) {
+            $shipment['sender_id'] = $this->createAddress($shipment['sender']);
+        }
+
         $sql ="
             INSERT INTO `inpostoc3_shipments` 
-            (`order_id`,`service_id`,`status`)
+            (`order_id`,`service_id`,`status`,`sender_id`,`receiver_id`)
             VALUES 
             (
                 '". $shipment['order_id']."',
                 '". $shipment['service_id']."',
-                '". $shipment['status']."'
+                '". $shipment['status']."',
+                '". $shipment['sender_id']."',
+                '". $shipment['receiver_id']."'
             );
         ";
         $this->db->query($sql);
@@ -477,6 +557,7 @@ class ModelExtensionShippingInPostOC3 extends Model {
                 $shipment['custom_attributes']['shipment_id'] = $shipment_id;
                 $this->createCustomAttributes($shipment['custom_attributes']);
             }
+            
         }
         
         return $shipment_id;
@@ -544,7 +625,7 @@ class ModelExtensionShippingInPostOC3 extends Model {
 
         $sql = "
             INSERT INTO `inpostoc3_shipments` 
-            (`id`,`order_id`,`service_id`,`number`,`tracking_number`,`status`,`receiver_id`,`additional_services`,`is_return`)
+            (`id`,`order_id`,`service_id`,`number`,`tracking_number`,`status`,`receiver_id`,`additional_services`,`is_return`,`sender_id`)
             VALUES 
             ( 
             '". $shipment['id']."',
@@ -555,7 +636,8 @@ class ModelExtensionShippingInPostOC3 extends Model {
             '". $shipment['status']."',
             '". $shipment['receiver_id']."',
             '". $shipment['additional_services']."',
-            '". $shipment['is_return']."'
+            '". $shipment['is_return']."',
+            '". $shipment['sender_id']."'
             )
             ON DUPLICATE KEY UPDATE
               service_id = ". $shipment['service_id'] .",
@@ -564,7 +646,8 @@ class ModelExtensionShippingInPostOC3 extends Model {
               status = ". $shipment['status'] .",
               receiver_id = ". $shipment['receiver_id'] .",
               additional_services = ". $shipment['additional_services'] .",
-              is_return = ". $shipment['is_return'] ."
+              is_return = ". $shipment['is_return'] .",
+              sender_id = ". $shipment['sender_id'] ."
               ;
         ";
         $this->db->query($sql);
@@ -601,5 +684,25 @@ class ModelExtensionShippingInPostOC3 extends Model {
             $sql = " WHERE (" . implode(" ".$filter["where_operator"]." ", $where) . ")";
         }
         return $sql;
+    }
+
+    public function getCountriesByFilter($filter) {
+        $result = null;
+        $sql = "
+        SELECT * FROM `" . DB_PREFIX . "country`
+        ";
+        $allowed_keys = array ("country_id", "name", "iso_code_2", "iso_code_3");
+
+        $sql = $sql . $this->sqlBuildSimpleWhere($filter, $allowed_keys) . ";";
+        //$this->log->write(__METHOD__ . ' $sql: ' .$sql);
+
+        $query = $this->db->query ($sql);
+
+        //$this->log->write(__METHOD__ . ' $query: ' . print_r($query,true));
+        $result = array();
+        foreach($query->rows as $row){           
+            $result[]=$row;
+        }
+        return $result;
     }
 }
