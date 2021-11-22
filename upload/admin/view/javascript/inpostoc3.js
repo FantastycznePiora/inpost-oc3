@@ -82,15 +82,17 @@ $(document).ready(function() {
     });
     
 
+    $(document).on('change', '[id^="input-inpostoc3-sending-method-"]', function() {
+      if ( $(this).val() == 1 ) {
+        $('[id^="input-inpostoc3-sender-selected-point-"]').prop('disabled', false);
+      } else {
+        $('[id^="input-inpostoc3-sender-selected-point-"]').prop('disabled', true);
+      }
+    });
+
 });
 
-$(document).on('change', '[id^="input-inpostoc3-sending-method-"]', function() {
-  if ( $(this).val() == 1 ) {
-    $('[id^="input-inpostoc3-sender-selected-point-"]').prop('disabled', false);
-  } else {
-    $('[id^="input-inpostoc3-sender-selected-point-"]').prop('disabled', true);
-  }
-});
+
 
 
 function getUserToken() {
@@ -98,3 +100,4 @@ function getUserToken() {
     var access_token = new URLSearchParams(url.search).get('user_token');
     return access_token;
 }
+
