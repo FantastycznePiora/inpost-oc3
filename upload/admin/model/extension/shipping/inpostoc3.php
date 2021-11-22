@@ -419,11 +419,11 @@ class ModelExtensionShippingInPostOC3 extends Model {
         $allowed_keys = array ("id", "service_id", "sender_country_iso_code_3", "receiver_country_iso_code_3","sender_country_iso_code_2", "receiver_country_iso_code_2");
 
         $sql = $sql . $this->sqlBuildSimpleWhere($filter, $allowed_keys) . ";";
-        $this->log->write(__METHOD__ . ' $sql: ' .$sql);
+        //$this->log->write(__METHOD__ . ' $sql: ' .$sql);
 
         $query = $this->db->query ($sql);
 
-        $this->log->write(__METHOD__ . ' $query: ' . print_r($query,true));
+        //$this->log->write(__METHOD__ . ' $query: ' . print_r($query,true));
         $result = array();
         foreach($query->rows as $row){           
             $result[]=$row;
@@ -471,6 +471,44 @@ class ModelExtensionShippingInPostOC3 extends Model {
         return $result;
     }
 
+    public function getUniqueSenders($filter=array()) {
+        $result = null;
+        $sql = "
+        SELECT 
+            DISTINCT(s.sender_id) as id,
+            a.name,
+            a.company_name,
+            a.first_name,
+            a.last_name,
+            a.phone,
+            a.email,
+            a.street,
+            a.building_number,
+            a.line1,
+            a.line2,
+            a.city,
+            a.post_code,
+            a.country_iso_code_2,
+            a.country_iso_code_3
+        FROM `inpostoc3_shipments` s
+        INNER JOIN `inpostoc3_address` a ON s.sender_id = a.id
+        ";
+
+        $allowed_keys = array ("s.sender_id", "a.country_iso_code_2", "a.country_iso_code_3");
+
+        $sql = $sql . $this->sqlBuildSimpleWhere($filter, $allowed_keys) . ";";
+
+        $query = $this->db->query ($sql);
+
+        $this->log->write(__METHOD__ . ' $query: ' . print_r($query,true));
+        $result = array();
+        foreach($query->rows as $row){           
+            $result[]=$row;
+        }
+        return $result;
+
+    }
+
     public function createParcel($parcel) {
 
         $sql = "
@@ -502,33 +540,13 @@ class ModelExtensionShippingInPostOC3 extends Model {
         return $cattr_id;
     }
 
-    public function createAddress($addr) {
-        //add key check vs allowed keys
-        $columns = implode("`, `",array_keys($addr));
-        foreach($addr as $i => $val) {
-            $escaped_values[] = $this->db->escape($val); //instad of array_map, as uses $this->db->escape for conformity with OC3 framework
-        }
-        $values = implode("', '", $escaped_values );
-        //$this->log->write(__METHOD__ . '$escaped_values: ' . print_r($escaped_values,true));
-        $sql = "
-            INSERT INTO `inpostoc3_address`
-            (`$columns`)
-            VALUES
-            ('$values');
-        ";
-        //$this->log->write(__METHOD__ . 'sql: ' . print_r($sql,true));
-        $this->db->query($sql);
-        $addr_id = $this->db->getLastId();
-        return $addr_id;
-    }
-
     public function createShipment($shipment) {
         
         if ( !empty($shipment['receiver']) ) {
-            $shipment['receiver_id'] = $this->createAddress($shipment['receiver']);
+            $shipment['receiver_id'] = $this->saveAddress($shipment['receiver']);
         }
         if ( !empty($shipment['sender']) ) {
-            $shipment['sender_id'] = $this->createAddress($shipment['sender']);
+            $shipment['sender_id'] = $this->saveAddress($shipment['sender']);
         }
 
         $sql ="
@@ -663,6 +681,39 @@ class ModelExtensionShippingInPostOC3 extends Model {
         }
 
         return $shipment_id;
+    }
+
+    public function saveAddress($addr) {
+        //add key check vs allowed keys, array_intersect_key() - first array input, 2nd array filter
+        //one row
+        $columns = "`".implode("`,`",array_keys($addr))."`";
+        foreach($addr as $i => $val) {
+            $escaped_values[] = $this->db->escape($val); //instad of array_map, as uses $this->db->escape for conformity with OC3 framework
+        }
+        $values = "'".implode("','", $escaped_values )."'";
+        //$this->log->write(__METHOD__ . '$escaped_values: ' . print_r($escaped_values,true));
+
+        //Create an array, with VALUES() Keyword for ON DUPLICATE KEY CASE, cleared from 'id'
+        $pseudoArray = explode(",", $columns);
+        $finalArr = array();
+        array_walk($pseudoArray, function($val, $key) use (&$pseudoArray, &$finalArr) {
+            if ( $val != 'id') {
+                $finalArr[$key] = $val .'=VALUES('.$val.')';
+            }
+        });
+
+        $sql = "
+            INSERT INTO `inpostoc3_address`
+            ($columns)
+            VALUES
+            ($values)
+            ON DUPLICATE KEY UPDATE
+            " . implode(",", $finalArr). ";
+        ";
+        $this->log->write(__METHOD__ . 'sql: ' . print_r($sql,true));
+        $this->db->query($sql);
+        $addr_id = $this->db->getLastId();
+        return $addr_id;
     }
 
     protected function sqlBuildSimpleWhere($filter, $keys = array()  ) {

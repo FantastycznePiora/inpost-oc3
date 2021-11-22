@@ -52,7 +52,7 @@ $_['text_addr_line_2']                              = 'Address line 2';
 $_['text_addr_city']                                = 'City';
 $_['text_addr_post_code']                           = 'Post code';
 $_['text_addr_country_code']                        = 'Country';
-$_['text_addr_new']                                 = '-- Select or enter details';
+$_['text_addr_new']                                 = '-- Enter new sender details';
 $_['text_click_to_select']                          = 'Click to select...';
 
 // Entry
@@ -73,6 +73,7 @@ $_['entry_api_token']                               = 'API Token';
 $_['entry_api_org_id']                              = 'API organization id';
 $_['entry_sending_method_parcel_locker']            = 'Post at parcel locker';  // 'Nadanie w Paczkomacie'
 $_['entry_sendfrom']                                = 'Sending from country';
+$_['entry_name']                                    = '* Enter \'Name\' in the form';
 
 // Help
 $_['help_rate']                                     = 'Example: small:10.00,medium:12.00 Parcel template size:Cost,Parcel template size:Cost, etc...';
@@ -89,3 +90,4 @@ $_['button_shipping_print']                         = 'Get Label from InPost. On
 $_['error_permission']                              = 'Warning: You do not have permission to modify InPosst OC3 shipping!';
 $_['error_insufficient_shipment_data']              = 'Insufficient shipment data!';
 $_['error_no_service']                              = 'No service id!';
+$_['error_no_sender']                               = 'No sender id!';

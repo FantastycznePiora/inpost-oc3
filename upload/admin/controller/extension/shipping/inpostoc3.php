@@ -552,6 +552,9 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
                     empty($data['shipments'][$o_shipment['id']]['sender']) ? $data['shipments'][$o_shipment['id']]['sender'] = $data['sender'] : '';
                 }
 
+                $data['senders'] = $this->model_extension_shipping_inpostoc3->getUniqueSenders();
+                $data['parcel_templates'] = $this->model_extension_shipping_inpostoc3->getParcelTemplates();
+
                 
                 /*foreach( $data['inpostoc3_services'] as $service ) {
                     if ( isset($this->request->post['inpostoc3_service_id_'.$service['service_identifier']]) ) {
@@ -733,7 +736,7 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
     }
 
     // for AJAX calls and dynamic dropdown filling
-    // expecting ?route=extension/shipping/inpostoc3/sendingmethods&service_id=1&user_token=...
+    // sendingMethods: expecting ?route=extension/shipping/inpostoc3/sendingmethods&service_id=1&user_token=...
     public function sendingMethods() {
         $json = array();
 
@@ -744,11 +747,11 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
             $this->load->language('extension/shipping/inpostoc3');
             $filter['id'] = $this->request->get['service_id'];
             $inpost_services = $this->model_extension_shipping_inpostoc3->getServicesWithAssocAttributes($filter);
-            $this->log->write(__METHOD__ . ' service: ' . print_r($inpost_services, true));
+            //$this->log->write(__METHOD__ . ' service: ' . print_r($inpost_services, true));
             
             foreach ( $inpost_services as $service ) {
 
-                $this->log->write(__METHOD__ . ' !empty: ' . print_r(!empty($service['sending_methods']), true));
+                //$this->log->write(__METHOD__ . ' !empty: ' . print_r(!empty($service['sending_methods']), true));
             
                 if ( !empty($service['sending_methods']) ) {
                     
@@ -757,9 +760,27 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
                     }
                     
                     $json[$service['id']] = $service['sending_methods'];
-                    $this->log->write(__METHOD__ . ' json: ' . print_r($json, true));  
+                    //$this->log->write(__METHOD__ . ' json: ' . print_r($json, true));  
                 }
             }
+        }
+        $this->response->addHeader('Content-Type: application/json');
+        $this->response->setOutput(json_encode($json));
+    }
+
+    // senders: expecting ?route=extension/shipping/inpostoc3/senders&sender_id=1&user_token=...
+    public function senders() {
+        $json = array();
+        if ( !isset($this->request->get['sender_id']) ) {
+            $json['error']['warning'] = $this->language->get('error_no_sender');
+        } else {
+            $this->load->model('extension/shipping/inpostoc3');
+            $filter['s.sender_id'] = $this->request->get['sender_id'];
+            $senders = $this->model_extension_shipping_inpostoc3->getUniqueSenders($filter);
+            if (!empty($senders)) {
+               $json['sender_id']=$senders;
+            }
+            $this->log->write(__METHOD__ . ' json: ' . print_r($json, true)); 
         }
         $this->response->addHeader('Content-Type: application/json');
         $this->response->setOutput(json_encode($json));
