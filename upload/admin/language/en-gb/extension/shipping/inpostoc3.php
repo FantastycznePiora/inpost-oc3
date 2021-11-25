@@ -90,4 +90,5 @@ $_['button_shipping_print']                         = 'Get Label from InPost. On
 $_['error_permission']                              = 'Warning: You do not have permission to modify InPosst OC3 shipping!';
 $_['error_insufficient_shipment_data']              = 'Insufficient shipment data!';
 $_['error_no_service']                              = 'No service id!';
+$_['error_no_sending_method']                       = 'No sending method id!';
 $_['error_no_sender']                               = 'No sender id!';

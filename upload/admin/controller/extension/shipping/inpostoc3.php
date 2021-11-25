@@ -737,7 +737,7 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
 
     // for AJAX calls and dynamic dropdown filling
     // sendingMethods: expecting ?route=extension/shipping/inpostoc3/sendingmethods&service_id=1&user_token=...
-    public function sendingMethods() {
+    public function sendingMethodsForService() {
         $json = array();
 
         if ( !isset($this->request->get['service_id']) ) {
@@ -768,6 +768,32 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
         $this->response->setOutput(json_encode($json));
     }
 
+    // get details of specific sending method
+    public function sendingMethod() {
+        $json = array();
+
+        if ( !isset($this->request->get['sending_method_id']) || $this->request->get['sending_method_id'] == 0 ) {
+            $json['error']['warning'] = $this->language->get('error_no_sending_method');
+        } else {
+            $this->load->model('extension/shipping/inpostoc3');
+            $this->load->language('extension/shipping/inpostoc3');
+
+            $filter['id'] = $this->request->get['sending_method_id'];
+            $sending_methods = $this->model_extension_shipping_inpostoc3->getSendingMethods($filter);
+            $sending_method = $sending_methods[0]; // dereference from multi-row structure
+            if ( !empty($sending_method) ) {
+                $sending_method['description'] = $this->language->get('text_sending_method_' . $sending_method['sending_method_identifier'] );
+                $json['sending_method'] = $sending_method;
+            } else {
+                $json['error']['warning'] = $this->language->get('error_no_sending_method');
+            }
+            
+        }
+
+        $this->response->addHeader('Content-Type: application/json');
+        $this->response->setOutput(json_encode($json));
+    }
+    
     // senders: expecting ?route=extension/shipping/inpostoc3/senders&sender_id=1&user_token=...
     public function senders() {
         $json = array();

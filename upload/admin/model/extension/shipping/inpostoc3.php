@@ -509,6 +509,25 @@ class ModelExtensionShippingInPostOC3 extends Model {
 
     }
 
+    function getSendingMethods($filter=array()) {
+        $result = null;
+        $sql = "
+        SELECT * FROM `inpostoc3_sending_method`
+        ";
+        $allowed_keys = array ("id", "sending_method_identifier");
+
+        $sql = $sql . $this->sqlBuildSimpleWhere($filter, $allowed_keys) . ";";
+        $this->log->write(__METHOD__ . ' $sql: ' .$sql);
+
+        $query = $this->db->query ($sql);
+        //$this->log->write(__METHOD__ . ' $query: ' . print_r($query,true));
+        $result = array();
+        foreach($query->rows as $row){           
+            $result[]=$row;
+        }
+        return $result;
+    }
+
     public function createParcel($parcel) {
 
         $sql = "

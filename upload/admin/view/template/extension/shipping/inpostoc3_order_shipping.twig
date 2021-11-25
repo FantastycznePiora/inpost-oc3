@@ -68,7 +68,7 @@
                     <tbody>
                       <tr>
                         <td>
-                        <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;">
+                        <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                           <label class="col-md-2 control-label" for="input-inpostoc3-service-{{order_id}}-{{ shipment.id }}">{{ text_service }}</label>
                           <div class="col-md-10">
                             {% if shipment.can_edit.sending_method_details %}
@@ -91,7 +91,7 @@
                             {% endif %}
                           </div>
                         </div>
-                        <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;">
+                        <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                           <label class="col-md-2 control-label" for="input-inpostoc3-sending-method-{{order_id}}-{{ shipment.id }}">{{ text_sending_method }}</label>
                           <div class="col-md-10">
                             {% if shipment.can_edit.sending_method_details %}
@@ -131,7 +131,7 @@
                     <tbody>
                       <tr>
                         <td class="text-left">
-                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;" id="{{ order_id }}-{{ shipment.id }}-dropoff-point">
+                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;" id="{{ order_id }}-{{ shipment.id }}-dropoff-point">
                             <label class="col-md-3 control-label" for="input-inpostoc3-sender-selected-point-{{order_id}}-{{ shipment.id }}">{{ text_selected_sending_point }}</label>
                             <div class="col-md-9">
                               {% if shipment.can_edit.sending_method_details %}
@@ -142,7 +142,7 @@
                               {% else %}
                               "{{ shipment.custom_attributes.dropoff_point }}" 
                               {% endif %}
-                              {% if shipment.custom_attributes.sending_method is not same as("parcel_locker") %}
+                              {% if shipment.custom_attributes.sending_method is not same as ("parcel_locker") %}
                               disabled 
                               {% endif %}
                               class="btn btn-primary form-control" style="width: 100%;" />
@@ -153,7 +153,7 @@
                           </div>
 
                           {% if shipment.can_edit.sending_method_details %}
-                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;">
+                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                             <div class="col-md-12">
                               <select  name="input-inpostoc3-select-sender-{{order_id}}-{{ shipment.id }}" id="input-inpostoc3-select-sender-{{order_id}}-{{ shipment.id }}" class="form-control" style="width: 100%;">
                               <option value="0"
@@ -175,7 +175,7 @@
 						              {% endif %}
 
 
-                          <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;">
+                          <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                             <label class="col-md-3 control-label" for="input-inpostoc3-sender-name-{{order_id}}-{{ shipment.id }}">{{ text_name }}</label>
                             <div class="col-md-9">
                               {% if shipment.can_edit.sending_method_details %}
@@ -187,7 +187,7 @@
                               {% endif %}     
                             </div>
                           </div>
-                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;">
+                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                             <label class="col-md-3 control-label" for="input-inpostoc3-sender-company-name-{{order_id}}-{{ shipment.id }}">{{ text_company_name }}</label>
                             <div class="col-md-9">
                               {% if shipment.can_edit.sending_method_details %}
@@ -199,7 +199,7 @@
                               {% endif %}                              
                             </div>
                           </div>
-                          <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;">
+                          <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                             <label class="col-md-3 control-label" for="input-inpostoc3-sender-first-name-{{order_id}}-{{ shipment.id }}">{{ text_first_name }}</label>
                             <div class="col-md-9">
                               {% if shipment.can_edit.sending_method_details %}
@@ -211,7 +211,7 @@
                               {% endif %}                              
                             </div>
                           </div>
-                          <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;">
+                          <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                             <label class="col-md-3 control-label" for="input-inpostoc3-sender-last-name-{{order_id}}-{{ shipment.id }}">{{ text_last_name }}</label>
                             <div class="col-md-9">
                               {% if shipment.can_edit.sending_method_details %}
@@ -223,7 +223,7 @@
                               {% endif %}                                  
                             </div>
                           </div>
-                          <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;">
+                          <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                             <label class="col-md-3 control-label" for="input-inpostoc3-sender-phone-{{order_id}}-{{ shipment.id }}">{{ text_phone }}</label>
                             <div class="col-md-9">
                               {% if shipment.can_edit.sending_method_details %}
@@ -235,7 +235,7 @@
                               {% endif %}                         
                             </div>
                           </div>
-                          <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;">
+                          <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                             <label class="col-md-3 control-label" for="input-inpostoc3-sender-email-{{order_id}}-{{ shipment.id }}">{{ text_email }}</label>
                             <div class="col-md-9">
                               {% if shipment.can_edit.sending_method_details %}
@@ -247,7 +247,7 @@
                               {% endif %}                              
                             </div>                            
                           </div>
-                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;">
+                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                             <label class="col-md-3 control-label" for="input-inpostoc3-sender-addr-street-{{order_id}}-{{ shipment.id }}">{{ text_addr_street }}</label>
                             <div class="col-md-9">
                               {% if shipment.can_edit.sending_method_details %}
@@ -259,7 +259,7 @@
                               {% endif %}                              
                             </div>
                           </div>
-                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;">
+                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                             <label class="col-md-3 control-label" for="input-inpostoc3-sender-addr-building-number-{{order_id}}-{{ shipment.id }}">{{ text_addr_building_number }}</label>
                             <div class="col-md-9">
                               {% if shipment.can_edit.sending_method_details %}
@@ -271,7 +271,7 @@
                               {% endif %}                                
                             </div>
                           </div>
-                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;">
+                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                             <label class="col-md-3 control-label" for="input-inpostoc3-sender-addr-line-1-{{order_id}}-{{ shipment.id }}">{{ text_addr_line_1 }}</label>
                             <div class="col-md-9">
                               {% if shipment.can_edit.sending_method_details %}
@@ -283,7 +283,7 @@
                               {% endif %}                                
                             </div>
                           </div>
-                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;">
+                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                             <label class="col-md-3 control-label" for="input-inpostoc3-sender-addr-line-2-{{order_id}}-{{ shipment.id }}">{{ text_addr_line_2 }}</label>
                             <div class="col-md-9">
                               {% if shipment.can_edit.sending_method_details %}
@@ -295,7 +295,7 @@
                               {% endif %}                                
                             </div>
                           </div>
-                          <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;">
+                          <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                             <label class="col-md-3 control-label" for="input-inpostoc3-sender-addr-city-{{order_id}}-{{ shipment.id }}">{{ text_addr_city }}</label>
                             <div class="col-md-9">
                               {% if shipment.can_edit.sending_method_details %}
@@ -307,7 +307,7 @@
                               {% endif %}                               
                             </div>
                           </div>
-                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;">
+                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                             <label class="col-md-3 control-label" for="input-inpostoc3-sender-addr-post-code-{{order_id}}-{{ shipment.id }}">{{ text_addr_post_code }}</label>
                             <div class="col-md-9">
                               {% if shipment.can_edit.sending_method_details %}
@@ -319,7 +319,7 @@
                               {% endif %}                             
                             </div>
                           </div>
-                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;">
+                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                             <label class="col-md-3 control-label" for="input-inpostoc3-sender-addr-country-code-{{order_id}}-{{ shipment.id }}">{{ text_addr_country_code }}</label>
                             <div class="col-md-9">
                               <span name="input-inpostoc3-sender-addr-country-code-{{order_id}}-{{ shipment.id }}" class="form-control" id="input-inpostoc3-sender-addr-country-code-{{order_id}}-{{ shipment.id }}">{{ shipment.sender.country_iso_code_2 }}</span>                             
@@ -338,25 +338,28 @@
                     <tbody>
                       <tr>
                         <td class="text-left">
-                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;" id="{{ order_id }}-{{ shipment.id }}-target-point">
-                            <label class="col-md-3 control-label" for="input-inpostoc3-{{order_id}}-{{ shipment.id }}-receiver-selected-point">{{ text_selected_target_point }}</label>
+                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;" id="{{ order_id }}-{{ shipment.id }}-target-point">
+                            <label class="col-md-3 control-label" for="input-inpostoc3-receiver-selected-point-{{order_id}}-{{ shipment.id }}">{{ text_selected_target_point }}</label>
                             <div class="col-md-9">
                               {% if shipment.can_edit.sending_method_details %}
-                              <input type="button" form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}" name="input-inpostoc3-{{order_id}}-{{ shipment.id }}-receiver-selected-point" id="input-inpostoc3-{{order_id}}-{{ shipment.id }}-receiver-selected-point" 
+                              <input type="button" form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}" name="input-inpostoc3-receiver-selected-point-{{order_id}}-{{ shipment.id }}" id="input-inpostoc3-receiver-selected-point-{{order_id}}-{{ shipment.id }}" 
                               value=
                               {% if shipment.custom_attributes.target_point is empty %}
                               "{{ text_click_to_select }}" 
                               {% else %}
                               "{{ shipment.custom_attributes.target_point }}" 
                               {% endif %}
+                              {% if shipment.service_id is not same as("1") %}
+                              disabled 
+                              {% endif %}
                               class="btn btn-primary form-control" style="width: 100%;" />
                               {% else %}
-                              <span name="input-inpostoc3-{{order_id}}-{{ shipment.id }}-receiver-selected-point" class="form-control">{{ shipment.custom_attributes.target_point }}</span>
+                              <span name="input-inpostoc3-receiver-selected-point-{{order_id}}-{{ shipment.id }}" class="form-control">{{ shipment.custom_attributes.target_point }}</span>
                               {% endif %}                              
                             </div>
                           </div>
 
-                          <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;">
+                          <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                             <label class="col-md-3 control-label" for="input-inpostoc3-receiver-name-{{order_id}}-{{ shipment.id }}">{{ text_name }}</label>
                             <div class="col-md-9">
                               {% if shipment.can_edit.sending_method_details %}
@@ -368,7 +371,7 @@
                               {% endif %}     
                             </div>
                           </div>
-                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;">
+                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                             <label class="col-md-3 control-label" for="input-inpostoc3-receiver-company-name-{{order_id}}-{{ shipment.id }}">{{ text_company_name }}</label>
                             <div class="col-md-9">
                               {% if shipment.can_edit.sending_method_details %}
@@ -380,7 +383,7 @@
                               {% endif %}                              
                             </div>
                           </div>
-                          <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;">
+                          <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                             <label class="col-md-3 control-label" for="input-inpostoc3-receiver-first-name-{{order_id}}-{{ shipment.id }}">{{ text_first_name }}</label>
                             <div class="col-md-9">
                               {% if shipment.can_edit.sending_method_details %}
@@ -392,7 +395,7 @@
                               {% endif %}                              
                             </div>
                           </div>
-                          <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;">
+                          <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                             <label class="col-md-3 control-label" for="input-inpostoc3-receiver-last-name-{{order_id}}-{{ shipment.id }}">{{ text_last_name }}</label>
                             <div class="col-md-9">
                               {% if shipment.can_edit.sending_method_details %}
@@ -404,7 +407,7 @@
                               {% endif %}                                  
                             </div>
                           </div>
-                          <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;">
+                          <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                             <label class="col-md-3 control-label" for="input-inpostoc3-receiver-phone-{{order_id}}-{{ shipment.id }}">{{ text_phone }}</label>
                             <div class="col-md-9">
                               {% if shipment.can_edit.sending_method_details %}
@@ -416,7 +419,7 @@
                               {% endif %}                         
                             </div>
                           </div>
-                          <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;">
+                          <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                             <label class="col-md-3 control-label" for="input-inpostoc3-receiver-email-{{order_id}}-{{ shipment.id }}">{{ text_email }}</label>
                             <div class="col-md-9">
                               {% if shipment.can_edit.sending_method_details %}
@@ -428,7 +431,7 @@
                               {% endif %}                              
                             </div>                            
                           </div>
-                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;">
+                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                             <label class="col-md-3 control-label" for="input-inpostoc3-receiver-addr-street-{{order_id}}-{{ shipment.id }}">{{ text_addr_street }}</label>
                             <div class="col-md-9">
                               {% if shipment.can_edit.sending_method_details %}
@@ -440,7 +443,7 @@
                               {% endif %}                              
                             </div>
                           </div>
-                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;">
+                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                             <label class="col-md-3 control-label" for="input-inpostoc3-receiver-addr-building-number-{{order_id}}-{{ shipment.id }}">{{ text_addr_building_number }}</label>
                             <div class="col-md-9">
                               {% if shipment.can_edit.sending_method_details %}
@@ -452,7 +455,7 @@
                               {% endif %}                                
                             </div>
                           </div>
-                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;">
+                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                             <label class="col-md-3 control-label" for="input-inpostoc3-receiver-addr-line-1-{{order_id}}-{{ shipment.id }}">{{ text_addr_line_1 }}</label>
                             <div class="col-md-9">
                               {% if shipment.can_edit.sending_method_details %}
@@ -464,7 +467,7 @@
                               {% endif %}                                
                             </div>
                           </div>
-                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;">
+                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                             <label class="col-md-3 control-label" for="input-inpostoc3-receiver-addr-line-2-{{order_id}}-{{ shipment.id }}">{{ text_addr_line_2 }}</label>
                             <div class="col-md-9">
                               {% if shipment.can_edit.sending_method_details %}
@@ -476,7 +479,7 @@
                               {% endif %}                                
                             </div>
                           </div>
-                          <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;">
+                          <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                             <label class="col-md-3 control-label" for="input-inpostoc3-receiver-addr-city-{{order_id}}-{{ shipment.id }}">{{ text_addr_city }}</label>
                             <div class="col-md-9">
                               {% if shipment.can_edit.sending_method_details %}
@@ -488,7 +491,7 @@
                               {% endif %}                               
                             </div>
                           </div>
-                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;">
+                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                             <label class="col-md-3 control-label" for="input-inpostoc3-receiver-addr-post-code-{{order_id}}-{{ shipment.id }}">{{ text_addr_post_code }}</label>
                             <div class="col-md-9">
                               {% if shipment.can_edit.sending_method_details %}
@@ -500,7 +503,7 @@
                               {% endif %}                             
                             </div>
                           </div>
-                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;">
+                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                             <label class="col-md-3 control-label" for="input-inpostoc3-receiver-addr-country-code-{{order_id}}-{{ shipment.id }}">{{ text_addr_country_code }}</label>
                             <div class="col-md-9">
                               <span name="input-inpostoc3-receiver-addr-country-code-{{order_id}}-{{ shipment.id }}" class="form-control">{{ shipment.receiver.country_iso_code_2 }}</span>                             
@@ -535,7 +538,7 @@
                       {% for parcel in shipment.parcels %}
                       <tr>
                         <td class="text-left">
-                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 10px; padding-bottom: 10px;">
+                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                             <div class="col-md-12">
                               <select  name="input-inpostoc3-parcel-{{order_id}}-{{ shipment.id }}-{{ parcel.id }}" id="input-inpostoc3-parcel-{{order_id}}-{{ shipment.id }}-{{ parcel.id }}" class="form-control" style="width: 100%;">
                               <option value="0"
