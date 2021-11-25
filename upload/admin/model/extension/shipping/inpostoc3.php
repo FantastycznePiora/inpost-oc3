@@ -756,7 +756,7 @@ class ModelExtensionShippingInPostOC3 extends Model {
         return $sql;
     }
 
-    public function getCountriesByFilter($filter) {
+    public function getCountriesByFilter($filter=array()) {
         $result = null;
         $sql = "
         SELECT * FROM `" . DB_PREFIX . "country`

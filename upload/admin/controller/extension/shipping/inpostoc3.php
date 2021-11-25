@@ -517,7 +517,9 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
                     if (count($find['result'] ) == 1) {
                         $data["sender"]["country_iso_code_2"] = $find['result'][0]['sender_country_iso_code_2'];
                         $data["sender"]["country_iso_code_3"] = $find['result'][0]['sender_country_iso_code_3'];
-                    }  
+                    } 
+                    
+                    
                 }
 
                 $filter['order_id'] = $data['order_id'];
@@ -550,6 +552,20 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
                     }
                     empty($data['shipments'][$o_shipment['id']]['receiver']) ? $data['shipments'][$o_shipment['id']]['receiver'] = $data['receiver'] : '';
                     empty($data['shipments'][$o_shipment['id']]['sender']) ? $data['shipments'][$o_shipment['id']]['sender'] = $data['sender'] : '';
+
+                    $cfilter['iso_code_2'] = $o_shipment["sender"]["country_iso_code_2"];
+                    $cfilter['iso_code_3'] = $o_shipment["sender"]["country_iso_code_3"];
+                    $sender_countries = $this->model_extension_shipping_inpostoc3->getCountriesByFilter($cfilter); //there ought to be one
+                    if ( count($sender_countries) == 1 ) {
+                        $data['sender_country_postcode_required'] = $sender_countries[0]["postcode_required"];
+                    }
+
+                    $cfilter['iso_code_2'] = $o_shipment["receiver"]["country_iso_code_2"];
+                    $cfilter['iso_code_3'] = $o_shipment["receiver"]["country_iso_code_3"];
+                    $receiver_countries = $this->model_extension_shipping_inpostoc3->getCountriesByFilter($cfilter); //there ought to be one
+                    if ( count($receiver_countries) == 1 ) {
+                        $data['receiver_country_postcode_required'] = $receiver_countries[0]["postcode_required"];
+                    }
                 }
 
                 $data['senders'] = $this->model_extension_shipping_inpostoc3->getUniqueSenders();
@@ -735,7 +751,7 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
         return !$this->error;
     }
 
-    // for AJAX calls and dynamic dropdown filling
+    // ==== for AJAX calls and dynamic dropdown filling ====
     // sendingMethods: expecting ?route=extension/shipping/inpostoc3/sendingmethods&service_id=1&user_token=...
     public function sendingMethodsForService() {
         $json = array();
@@ -780,7 +796,7 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
 
             $filter['id'] = $this->request->get['sending_method_id'];
             $sending_methods = $this->model_extension_shipping_inpostoc3->getSendingMethods($filter);
-            $sending_method = $sending_methods[0]; // dereference from multi-row structure
+            $sending_method = $sending_methods[0]; // dereference from multi-row structure, ought to be just one but if multiple entries present, as a rule of thumb, pick first one
             if ( !empty($sending_method) ) {
                 $sending_method['description'] = $this->language->get('text_sending_method_' . $sending_method['sending_method_identifier'] );
                 $json['sending_method'] = $sending_method;

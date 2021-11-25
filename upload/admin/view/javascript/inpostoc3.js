@@ -4,34 +4,8 @@ const geoWidgetStyleId = 'inpostoc3-geowidget-style';
 const geoWidgetScriptSrc = '<script src=\"https:\/\/geowidget.easypack24.net\/js\/sdk-for-javascript.js\" id=\"' + geoWidgetSrcId + '\"><\/script>';
 const geoWidgetStyleSrc = '<link rel=\"stylesheet\" href=\"https://geowidget.easypack24.net/css/easypack.css\" id=\"' + geoWidgetStyleId + '\" />';
 const geoWidgetDefaultMapType = 'osm';
-// use ajv or other JSONSchema based validator in future, share schema between catalog and admin
-/* const geoWidgetAllowedParameters = {
-  "defaultLocale": ['pl','uk'],
-  "locale": ['pl','uk','it'],
-  "mapType": ['osm','google'],
-  "searchType" : ['osm', 'google'],
-  "points" : {
-    "types": ['pop', 'parcel_locker', 'parcel_locker_only'],  # Options: parcel_locker_only, parcel_locker, pop    
-    "allowedToolTips": ['pok', 'pop'],
-    "functions": ['parcel','parcel_send','parcel_collect'] //avail. functions: parcel, parcel_send, parcel_collect
-  }, 
-  "map" : {
-     "googleKey": '', // required to use Google Maps API
-      "useGeolocation": true, // ['true','false'], default: true
-      "initialZoom": 13, // default: 13
-    "detailsMinZoom": 15, // minimum zoom after marker click
-    autocompleteZoom: 14,
-    visiblePointsMinZoom: 13,
-    "defaultLocation": [52.229807, 21.011595],
-    "initialTypes": ['pop', 'parcel_locker', 'parcel_locker_only'], // which type should be selected by default. Options: parcel_locker_only, parcel_locker, pop
-  },
-  "paymentFilter": {
-    "visible": ['true','false'], //default: false zezwala na wyświetlenie filtra płatnosć w paczkomacie
-    "defaultEnabled": ['true','false'], //default: false, włączony filtr dla płatności w paczkomacie już przy inicjalizacji
-    "showOnlyWithPayment": ['true','false'] //default: false, wymusza pokazywanie obiektów tylko z płatnością w paczkomacie
-  }
-}; // https://dokumentacja-inpost.atlassian.net/wiki/spaces/PL/pages/7438409/Geowidget+v4+User+s+Guide+New
-*/
+const geoWidgetDefaultLocale = ['pl', 'uk' , 'it'];
+// https://dokumentacja-inpost.atlassian.net/wiki/spaces/PL/pages/7438409/Geowidget+v4+User+s+Guide+New
 
 $(document).ready(function() {
 
@@ -40,18 +14,27 @@ $(document).ready(function() {
 
   
 
-  $('[id^="input-inpostoc3-sender-selected-point-"]').on('click', function() {
+  $('[id*="-selected-point-"]').on('click', function() {
     var data = {};
     data.buttonElementId = $(this).attr('id');
     var items = $(this).attr('id').split('-');
     data.orderId = items[5];
     data.shipmentId = items[6];
-    data.countryIsoCode2 = $('#input-inpostoc3-sender-addr-country-code-' + data.orderId + '-' + data.shipmentId).text().toLowerCase();
-    console.log(easyPackWidget(data));
-    //openModal(data);
+    data.who = items[2];
+    ( data.who == 'sender') ? data.isSender = true : data.isSender = false;
+    data.service = {};
+    data.service.id = $('#input-inpostoc3-service-' + data.orderId + '-' + data.shipmentId).val();
+    try { 
+      easyPackWidget(data)
+    }
+    catch (err) {
+      alert(err);
+      console.error(err);
+      console.error(err.stack);
+    }
   });
-  
-  //jQuery starts with
+
+  // Cascade dependency - service -> available sending methods
   $('[id^="input-inpostoc3-service-"]').on('change',function() {
     //console.log('new: ' + $(this).attr('id') + '  ' + $(this).val());
     var serviceId = $(this).val();
@@ -170,10 +153,20 @@ function easyPackWidget(data) {
   if ( !('mapInit' in data) ) {
     data.mapInit = {};
   }
-  data.mapInit.defaultLocale = data.countryIsoCode2;
+  
   data.mapInit.mapType = geoWidgetDefaultMapType;
   data.mapInit.searchType = geoWidgetDefaultMapType;
-
+  data.countryIsoCode2 = $('#input-inpostoc3-' + data.who + '-addr-country-code-' + data.orderId + '-' + data.shipmentId).text().toLowerCase();
+  if ( !geoWidgetDefaultLocale.includes(data.countryIsoCode2) ) {
+    throw new GeoWidgetError('Incorrect defaultLocale for GeoWidget = "' + data.countryIsoCode2 + '".Allowed defaultLocale values = [' + geoWidgetDefaultLocale + ']');
+  }
+  data.mapInit.defaultLocale = data.countryIsoCode2;
+  if ( !('selectedPoint' in data) ) {
+    data.selectedPoint = {};
+  }
+  if ( $('#'+data.buttonElementId).val() ) {
+    data.selectedPoint.name =  $('#'+data.buttonElementId).val();
+  }
   if ( !('sendingMethod' in data) ) {
     data.sendingMethod = {};
   }
@@ -183,54 +176,65 @@ function easyPackWidget(data) {
     url: 'index.php?route=extension/shipping/inpostoc3/sendingmethod&sending_method_id=' + data.sendingMethod.id + '&user_token=' + getUserToken(),
     type: 'get',
     error: function(xhr, ajaxOptions, thrownError) {
-      alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+      console.error(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
     },
     success: function(retdata, status) {
       if ($.trim(retdata)){   
-        //console.log("What follows is not blank: " + data[serviceId]);
         $.each( retdata, function( smId, smObj ) {
-          console.log(smObj);
+          //console.log(smObj);
           if (data.sendingMethod.id = smObj.id ) {
             data.sendingMethod = smObj;
-            if ( data.sendingMethod.sending_method_identifier == 'parcel_locker' ) {
-              data.isDropOffPoint = true
-            }
-            if ( !('points' in data) ) {
-              data.mapInit.points = {};
-            }
-            data.mapInit.points.types = ['parcel_locker'];
-            if (data.isDropOffPoint) {
-              data.mapInit.points.functions = ['parcel_send'];
-            } else {
-              data.mapInit.points.functions = [];
-            }
-            if ( !('map' in data) ) {
-              data.mapInit.map = {};
-            }
-            data.mapInit.map.initialTypes = ['parcel_locker'];
+            ( data.sendingMethod.sending_method_identifier == 'parcel_locker' && data.isSender ) ? data.isDropOffPoint = true : data.isDropOffPoint = false;
             return false; //ought to be only one, yet if that's not the case as a rule of thumb - first entry taken, break the loop
           }
-        });  
-        console.log('before init: '); 
-        console.log(data);
+        }); 
+        if ( !('points' in data) ) {
+          data.mapInit.points = {};
+        }
+        if ( !('map' in data) ) {
+          data.mapInit.map = {};
+        }
+        // TODO: points types and map initial types dependent on service selected
+        data.mapInit.points.types = ['parcel_locker'];
+        ( data.isDropOffPoint ) ? data.mapInit.points.functions = ['parcel_send'] : data.mapInit.points.functions = [];
+        data.mapInit.map.initialTypes = ['parcel_locker'];
+        
+        //console.log('before init: '); 
+       // console.log(data);
         // init
         easyPack.init(data.mapInit);
-
         // run modal 
         openModal(data);
-        return data;    
+        return;  
       }
     }
   });
 }
 
 function openModal(data) {
-  easyPack.modalMap(function(point, modal) {
+  //console.log('before calling modalMap:');
+  //console.log(data);
+  this.data = data; //make sure, that proper object is accessed in anonymous callback
+  this.map = easyPack.modalMap(function(point, modal) {
+    //console.log('inside anonymous callback this.data:');
+    //console.log(this.data);
     modal.closeModal();
-    console.log(point);
-    if ( !('selectedPoint' in data) ) {
-      data.selectedPoint = {};
-    }
-    data.selectedPoint = point;
-  }, { width: 500, height: 600 });
+    //console.log(point);
+    this.data.selectedPoint = point;
+    $('#'+this.data.buttonElementId).val(this.data.selectedPoint.name);
+  }.bind(this), // ...and bind it to make sure apporpriate this is in use
+  { width: 500, height: 600 });
+  this.map.searchLockerPoint(data.selectedPoint.name);
+}
+
+
+class GeoWidgetError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "GeoWidgetError";
+  }
+}
+
+GeoWidgetError.prototype.toString = function() {
+  return this.name + ': ' + this.message;
 }
