@@ -305,22 +305,21 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
         $this->model_setting_event->deleteEventByCode('inpostoc3_eventAdminControllerShippingBefore');
     }
     
-    // handle single order shipping
+    // == handle single order shipping ================================================================================
     public function orderShipping() {
         //$this->log->write(__METHOD__);
 
         $this->load->language('extension/shipping/inpostoc3');
-        $this->document->setTitle($this->language->get('heading_title_order_shipping'));
         $this->document->addScript('view/javascript/inpostoc3.js');
              
-        /*
+        
         if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validate()) {
-			//$this->model_setting_setting->editSetting('shipping_inpostoc3', $this->request->post);
+			$this->saveShipments($this->request->post);
             // save data ^^
-			$this->session->data['success'] = $this->language->get('text_success');
+			$this->session->data['success'] = 'Shipments saved!';
 
-			$this->response->redirect($this->url->link('sale/order/info', 'user_token=' . $this->session->data['user_token'] . '&type=shipping', true));
-		}*/
+			$this->response->redirect($this->url->link('extension/shipping/inpostoc3/ordershipping', 'user_token=' . $this->session->data['user_token'] . '&order_id=' . $this->request->get['order_id'], true));
+		}
         
         $data = array ();
         
@@ -328,6 +327,12 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
 			$data['error_warning'] = $this->error['warning'];
 		} else {
 			$data['error_warning'] = '';
+		}
+        if ( isset($this->session->data['success']) ) {
+			$data['success'] = $this->session->data['success'];
+            $this->session->data['success'] = null;
+		} else {
+			$data['success'] = '';
 		}
 
         // preserve url parameters if any present
@@ -348,27 +353,25 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
 
         // set up the action_ variables to make sure that the form is submitted to proper method. 
         // take users back to the order/list of orders if they click on the Cancel button.
-        $data['action_save'] = $this->url->link('extension/shipping/inpostoc3/ordershipping', 'user_token=' . $this->session->data['user_token'], true);
+        $data['action_save'] = $this->url->link('extension/shipping/inpostoc3/ordershipping', 'user_token=' . $this->session->data['user_token'] . '&order_id=' . $this->request->get['order_id'], true);
         /* redo for each associated shipment
         $data['action_dispatch'] = $this->url->link('extension/shipping/inpostoc3/dispatchShipment', 'user_token=' . $this->session->data['user_token'], true);
-        $data['button_shipping_print'] = $this->language->get('button_shipping_print');
         */
+        $docTitle = $this->language->get('heading_title_order_shipping');
         if(!isset($this->request->get['order_id'])) {
             $data['cancel'] = $data['breadcrumbs'][1]['href'];
         } else {
             $data['order_id'] = $this->request->get['order_id'];
             $data['cancel'] = $this->url->link('sale/order/info', 'user_token=' . $this->session->data['user_token'] . '&order_id=' . $data['order_id'], true);
+            $docTitle = $docTitle .' #' . $this->request->get['order_id'];
         }
+        $this->document->setTitle($docTitle );
 
         $this->load->model('extension/shipping/inpostoc3');
         $inpost_services = $this->model_extension_shipping_inpostoc3->getServicesWithAssocAttributes();
         
         // expose variable for template
-        $data['inpost_services'] =  $inpost_services;    
-        //TODO replace/remove below flags once shipment parsing done      
-        $data["inpostoc3_can_edit"]["shipment"] = true;
-        $data["inpostoc3_can_edit"]["sending_method_details"] = true;
-
+        $data['inpost_services'] =  $inpost_services;         
 
         if( isset($this->request->get['order_id']) ) {
             
@@ -513,7 +516,7 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
                     }
                     $find['id'] = $this->config->get('shipping_inpostoc3_' . $data['shipping_code_inpostoc3_geo_zone_id'] . '_' . $data['shipping_code_inpostoc3_service_id'] . '_sendfrom');
                     $find['result'] = $this->model_extension_shipping_inpostoc3->getRoutes($find);
-                    $this->log->write(__METHOD__ .' $find: ' . print_r($find,true)); 
+                    //$this->log->write(__METHOD__ .' $find: ' . print_r($find,true)); 
                     if (count($find['result'] ) == 1) {
                         $data["sender"]["country_iso_code_2"] = $find['result'][0]['sender_country_iso_code_2'];
                         $data["sender"]["country_iso_code_3"] = $find['result'][0]['sender_country_iso_code_3'];
@@ -524,65 +527,33 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
 
                 $filter['order_id'] = $data['order_id'];
                 $data['shipments'] = $this->model_extension_shipping_inpostoc3->getShipments($filter);
-                //$this->log->write('Got shipments: ' . print_r($data['shipments'],true));
+
                 if ( empty($data['shipments']) || !isset($data['shipments']) ) {
-                    // means no draft stuff was even created, need to save one before serving the view
-                    $new_shipment['status'] = 'draft';
-                    $new_shipment['order_id'] = $data['order_id'];
-                    $new_shipment['service_id'] = $data['shipping_code_inpostoc3_service_id'];
-                    $new_shipment['receiver'] = $data['receiver'];
-                    $new_shipment['sender'] = $data['sender'];
-                    $new_shipment['parcels'][0]['template_id'] = $data['shipping_code_inpostoc3_parcel_template_id'];
-                    $new_shipment['custom_attributes']['target_point'] = $data['shipping_code_inpostoc3_target_point'];
-                    //$this->log->write(__METHOD__ . 'New shipment: ' . print_r($new_shipment,true));
-                    if ( $this->validateNewShipment($new_shipment) ) {
-                        $new_shipment['id'] = $this->model_extension_shipping_inpostoc3->createShipment($new_shipment);
-                        $filter['order_id'] = $data['order_id']; //just in case
-                        $data['shipments'] = $this->model_extension_shipping_inpostoc3->getShipments($filter);
-                        //$this->log->write(__METHOD__ .' Created new shipment, $data[\'shipments\']: ' . print_r($data['shipments'],true));     
-                    }
+                    // means no draft stuff was even created, need to create & save one before serving the view
+                    $this->createShipment($data);
                 }
                 
                 // can edit shipment, fill in receiver & sender if empty
+                $data["inpostoc3_can_edit_order"] = false;
                 foreach ( $data['shipments'] as $o_shipment ) {
                     if ($o_shipment['status'] == 'draft' ) {
                         $data['shipments'][$o_shipment['id']]['can_edit']['sending_method_details'] = true;
                     } else {
                         $data['shipments'][$o_shipment['id']]['can_edit']['sending_method_details'] = false;
                     }
+                    $data["inpostoc3_can_edit_order"] = $data["inpostoc3_can_edit_order"] || $data['shipments'][$o_shipment['id']]['can_edit']['sending_method_details'];
+                    
                     empty($data['shipments'][$o_shipment['id']]['receiver']) ? $data['shipments'][$o_shipment['id']]['receiver'] = $data['receiver'] : '';
                     empty($data['shipments'][$o_shipment['id']]['sender']) ? $data['shipments'][$o_shipment['id']]['sender'] = $data['sender'] : '';
 
-                    $cfilter['iso_code_2'] = $o_shipment["sender"]["country_iso_code_2"];
-                    $cfilter['iso_code_3'] = $o_shipment["sender"]["country_iso_code_3"];
-                    $sender_countries = $this->model_extension_shipping_inpostoc3->getCountriesByFilter($cfilter); //there ought to be one
-                    if ( count($sender_countries) == 1 ) {
-                        $data['sender_country_postcode_required'] = $sender_countries[0]["postcode_required"];
-                    }
-
-                    $cfilter['iso_code_2'] = $o_shipment["receiver"]["country_iso_code_2"];
-                    $cfilter['iso_code_3'] = $o_shipment["receiver"]["country_iso_code_3"];
-                    $receiver_countries = $this->model_extension_shipping_inpostoc3->getCountriesByFilter($cfilter); //there ought to be one
-                    if ( count($receiver_countries) == 1 ) {
-                        $data['receiver_country_postcode_required'] = $receiver_countries[0]["postcode_required"];
-                    }
+                    $data['sender_country_postcode_required'] = $this->isPostCodeRequired($o_shipment["sender"]);
+                    $data['receiver_country_postcode_required'] = $this->isPostCodeRequired($o_shipment["receiver"]);
+                    
                 }
 
                 $data['senders'] = $this->model_extension_shipping_inpostoc3->getUniqueSenders();
                 $data['parcel_templates'] = $this->model_extension_shipping_inpostoc3->getParcelTemplates();
 
-                
-                /*foreach( $data['inpostoc3_services'] as $service ) {
-                    if ( isset($this->request->post['inpostoc3_service_id_'.$service['service_identifier']]) ) {
-                        $data['shipping_code_inpostoc3_service_id'] = $this->request->post['inpostoc3_service_id_'.$service['service_identifier']];
-                        $data['inpostoc3_service_id_'.$service['service_identifier']] = $this->request->post['inpostoc3_service_id_'.$service['service_identifier']];
-                    } else {
-
-                    }
-                
-
-                    //$data['inpostoc3_'.$service['service_identifier'].'_id'] = $service['id'];
-                }*/
                 /*
                 foreach ($inpost_service['parcel_templates'] as $parcel_template) {
                     if (isset($this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $parcel_template['id'] . '_weight_class_id'])) {
@@ -596,11 +567,8 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
                     // check if shipment present in db already in 'draft' state. If not - disable truck ('dispatch' action/link) via setting a flag/manipulating truck url here
                     // get sending methods for service                    
                     // prep all fields required to build an InPost API request later - prep for saving in DB any updates
-
                 }
-
             }
-
 
         }
 
@@ -611,8 +579,40 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
         $this->response->setOutput($this->load->view('extension/shipping/inpostoc3_order_shipping', $data));
     }
 
+    public function createShipment(&$data) {
+        $new_shipment['status'] = 'draft';
+        $new_shipment['order_id'] = $data['order_id'];
+        $new_shipment['service_id'] = $data['shipping_code_inpostoc3_service_id'];
+        $new_shipment['receiver'] = $data['receiver'];
+        $new_shipment['sender'] = $data['sender'];
+        $new_shipment['parcels'][0]['template_id'] = $data['shipping_code_inpostoc3_parcel_template_id'];
+        $new_shipment['custom_attributes']['target_point'] = $data['shipping_code_inpostoc3_target_point'];
+        //$this->log->write(__METHOD__ . 'New shipment: ' . print_r($new_shipment,true));
+        if ( $this->validateNewShipment($new_shipment) ) {
+            $new_shipment['id'] = $this->model_extension_shipping_inpostoc3->saveShipment($new_shipment);
+            $filter['order_id'] = $data['order_id']; //just in case
+            $data['shipments'] = $this->model_extension_shipping_inpostoc3->getShipments($filter);
+            //$this->log->write(__METHOD__ .' Created new shipment, $data[\'shipments\']: ' . print_r($data['shipments'],true));     
+        }
+    }
 
-    // === Event handlers
+    public function saveShipments($data) {
+
+        $this->log->write(__METHOD__ .' Got submit on save: ' . print_r($data,true));
+        $this->load->model('extension/shipping/inpostoc3');
+        foreach ($data['input-inpostoc3'] as $order ) {
+            
+            foreach ($order['shipments'] as $shipment ) {
+                $this->log->write(__METHOD__ .' shipment to save struct: ' . print_r($shipment,true));
+                $this->model_extension_shipping_inpostoc3->saveShipment($shipment);
+            }
+
+        }
+
+    }
+
+
+    // === Event handlers =============================================================================================
     // admin/view/sale/order_info/before
     public function eventAdminViewOrderInfoBefore(&$route,&$data,&$template_code=null) {
         //$this->log->write(__METHOD__ .' event handler');
@@ -751,7 +751,7 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
         return !$this->error;
     }
 
-    // ==== for AJAX calls and dynamic dropdown filling ====
+    // ==== for AJAX calls and dynamic dropdown filling ===============================================================
     // sendingMethods: expecting ?route=extension/shipping/inpostoc3/sendingmethods&service_id=1&user_token=...
     public function sendingMethodsForService() {
         $json = array();
@@ -828,7 +828,7 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
         $this->response->setOutput(json_encode($json));
     }
 
-    // == general helpers
+    // == general helpers =============================================================================================
     protected function preserveUrlParams() {
         $url = '';
 
@@ -922,6 +922,20 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
             $ret = $service_details;
         }
         return $ret;  
+    }
+
+    protected function isPostCodeRequired($address) {
+
+        $result = false;
+
+        $cfilter['iso_code_2'] = $address["country_iso_code_2"];
+        $cfilter['iso_code_3'] = $address["country_iso_code_3"];
+        $sender_countries = $this->model_extension_shipping_inpostoc3->getCountriesByFilter($cfilter); //there ought to be one
+        if ( count($sender_countries) == 1 ) {
+            $result = $sender_countries[0]["postcode_required"];
+        }
+
+        return $result;
     }
 
     // == helper functions as per https://forum.opencart.com/viewtopic.php?f=144&t=221533 to modify original twig

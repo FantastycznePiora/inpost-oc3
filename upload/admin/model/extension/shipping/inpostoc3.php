@@ -439,17 +439,18 @@ class ModelExtensionShippingInPostOC3 extends Model {
         $allowed_keys = array ("id", "order_id", "number", "tracking_number", "receiver_id", "sender_id", "service_id", "is_return");
 
         $sql = $sql . $this->sqlBuildSimpleWhere($filter, $allowed_keys) . ";";
-        //$this->log->write(__METHOD__ . ' $sql: ' .$sql);
+        $this->log->write(__METHOD__ . ' $sql: ' .$sql);
 
         $query = $this->db->query ($sql);
 
-        //$this->log->write(__METHOD__ . ' $query: ' . print_r($query,true));
+        $this->log->write(__METHOD__ . ' $query: ' . print_r($query,true));
         $result = array();
         foreach($query->rows as $row){
             
             $filter2['shipment_id'] = $row['id'];
             $row['parcels'] = $this->getParcels($filter2);
-            $row['custom_attributes'] = $this->getCustomAttributes($filter2)[0]; // one set per shipment
+            $cattr = $this->getCustomAttributes($filter2);
+            $row['custom_attributes'] = $cattr[0]; // one set per shipment, take first as a rule of thumb
             if (!empty($row['service_id']) ) {
                 $filter3['id'] = $row['service_id'];
                 $row['service_identifier'] = $this->getServices($filter3)[0]['service_identifier']; //one set per shipment
@@ -465,7 +466,7 @@ class ModelExtensionShippingInPostOC3 extends Model {
 
             $result[$row['id']]=$row;
             
-            //$this->log->write(__METHOD__ . ' $row: ' . print_r($row,true));
+            $this->log->write(__METHOD__ . ' $row: ' . print_r($row,true));
 
         }
         return $result;
@@ -500,7 +501,7 @@ class ModelExtensionShippingInPostOC3 extends Model {
 
         $query = $this->db->query ($sql);
 
-        $this->log->write(__METHOD__ . ' $query: ' . print_r($query,true));
+        //$this->log->write(__METHOD__ . ' $query: ' . print_r($query,true));
         $result = array();
         foreach($query->rows as $row){           
             $result[]=$row;
@@ -517,7 +518,7 @@ class ModelExtensionShippingInPostOC3 extends Model {
         $allowed_keys = array ("id", "sending_method_identifier");
 
         $sql = $sql . $this->sqlBuildSimpleWhere($filter, $allowed_keys) . ";";
-        $this->log->write(__METHOD__ . ' $sql: ' .$sql);
+        //$this->log->write(__METHOD__ . ' $sql: ' .$sql);
 
         $query = $this->db->query ($sql);
         //$this->log->write(__METHOD__ . ' $query: ' . print_r($query,true));
@@ -528,211 +529,177 @@ class ModelExtensionShippingInPostOC3 extends Model {
         return $result;
     }
 
-    public function createParcel($parcel) {
-
-        $sql = "
-            INSERT INTO `inpostoc3_parcels`
-            (`shipment_id`,`template_id`)
-            VALUES
-            ( 
-                '". $parcel['shipment_id'] ."',
-                '". $parcel['template_id'] ."'
-            );
-        ";
-        $this->db->query($sql);
-        $parcel_id = $this->db->getLastId();
-        return $parcel_id;
-    }
-
-    public function createCustomAttributes($cattr) {
-        $sql = "
-            INSERT INTO `inpostoc3_custom_attributes` 
-            (`shipment_id`,`target_point`)
-            VALUES
-            (
-                '". $cattr['shipment_id']."',
-                '". $cattr['target_point']."'
-            );
-        ";
-        $this->db->query($sql);
-        $cattr_id = $this->db->getLastId();
-        return $cattr_id;
-    }
-
-    public function createShipment($shipment) {
+    public function saveAddress($addr) {
         
-        if ( !empty($shipment['receiver']) ) {
-            $shipment['receiver_id'] = $this->saveAddress($shipment['receiver']);
-        }
-        if ( !empty($shipment['sender']) ) {
-            $shipment['sender_id'] = $this->saveAddress($shipment['sender']);
-        }
+        $target = array(
+            'unique_col_name' => 'id',
+            'table_name' => 'inpostoc3_address'
+        );
 
-        $sql ="
-            INSERT INTO `inpostoc3_shipments` 
-            (`order_id`,`service_id`,`status`,`sender_id`,`receiver_id`)
-            VALUES 
-            (
-                '". $shipment['order_id']."',
-                '". $shipment['service_id']."',
-                '". $shipment['status']."',
-                '". $shipment['sender_id']."',
-                '". $shipment['receiver_id']."'
-            );
-        ";
+        $allowed_keys = array(
+            'id' => null,
+            'name' => null,
+            'company_name' => null,
+            'first_name' => null,
+            'last_name' => null,  
+            'phone' => null,
+            'email' => null,
+            'street' => null,
+            'building_number' => null,
+            'line1' => null,
+            'line2' => null,
+            'city' => null,
+            'post_code' => null,
+            'country_iso_code_2' => null,
+            'country_iso_code_3' => null
+        );
+
+        $sql = $this->sqlBuildSimplePartsForInsertOnDupKey(array_intersect_key($addr, $allowed_keys),$target);
         $this->db->query($sql);
-        $shipment_id = $this->db->getLastId();
-        
-        if($shipment_id) {
-            foreach( $shipment['parcels'] as $parcel ) {
-                $parcel['shipment_id'] = $shipment_id;
-                if( !empty($parcel['template_id']) ) {
-                    $this->createParcel($parcel);
-                }
-            }
-            if ( !empty($shipment['custom_attributes']) ) {
-                $shipment['custom_attributes']['shipment_id'] = $shipment_id;
-                $this->createCustomAttributes($shipment['custom_attributes']);
-            }
-            
-        }
-        
-        return $shipment_id;
+        $addr_id = $this->db->getLastId();
+        $this->log->write(__METHOD__ . '$addr_id: ' . print_r($addr_id,true));
+        // mysql last_insert_id may return 0, if e.g. only one of 2 addresses was updated and the other not at all in two subsequent, very closely done queries.
+        // therefore, to avoid breaking relationships, use it only for newly inserted rows.
+        return ( isset($addr['id']) ? $addr['id'] : $addr_id );
     }
 
     public function saveParcel($parcel) {
 
-        /*$defaultParcel = array(
-            "number" => null,
-            "tracking_number" => null,
-            "is_non_standard" -> 0
+        $target = array(
+            'unique_col_name' => 'id',
+            'table_name' => 'inpostoc3_parcels'
         );
-        $save = array_merge($defaultParcel,$parcel);
-        */
 
-        $sql = "
-            INSERT INTO `inpostoc3_parcels` 
-            (`id`,`shipment_id`,`template_id`,`number`,`tracking_number`,`is_non_standard`)
-            VALUES 
-            ( '". $parcel['id']."','". $parcel['shipment_id']."','". $parcel['template_id']."','". $parcel['number']."','". $parcel['tracking_number']."','". $parcel['is_non_standard']."')
-            ON DUPLICATE KEY UPDATE
-              shipment_id = ". $parcel['shipment_id'] .",
-              template_id = ". $parcel['template_id'] .",
-              number = ". $parcel['tracking_number'] .",
-              tracking_number = ". $parcel['tracking_number'] .",
-              is_non_standard = ". $parcel['is_non_standard'] .";
-        ";
+        $allowed_keys = array(
+            'id' => null,
+            'shipment_id' => null,
+            'template_id' => null,
+            'number' => null,
+            'tracking_number' => null,
+            'is_non_standard' => null
+        );
+
+        $sql = $sql = $this->sqlBuildSimplePartsForInsertOnDupKey(array_intersect_key($parcel, $allowed_keys),$target);
+
         $this->db->query($sql);
         $parcel_id = $this->db->getLastId();
-        return $parcel_id;
+        return ( isset($parcel['id']) ? $parcel['id'] : $parcel_id );
     }
 
     public function saveCustomAttributes($cattr) {
 
-        $sql = "
-            INSERT INTO `inpostoc3_custom_attributes` 
-            (`id`,`shipment_id`,`target_point`,`dropoff_point`,`sending_method`,`dispatch_order_id`,`allegro_user_id`,`allegro_transaction_id`)
-            VALUES 
-            ( 
-                '". $cattr['id']."',
-                '". $cattr['shipment_id']."',
-                '". $cattr['target_point']."',
-                '". $cattr['dropoff_point']."',
-                '". $cattr['sending_method']."',
-                '". $cattr['dispatch_order_id']."',
-                '". $cattr['allegro_user_id']."',
-                '". $cattr['allegro_transaction_id']."'
-                )
-            ON DUPLICATE KEY UPDATE
-              shipment_id = ". $cattr['shipment_id'] .",
-              target_point = ". $cattr['target_point'] .",
-              dropoff_point = ". $cattr['dropoff_point'] .",
-              sending_method = ". $cattr['sending_method'] .",
-              dispatch_order_id = ". $cattr['dispatch_order_id'] .",
-              allegro_user_id = ". $cattr['allegro_user_id'] .",
-              allegro_transaction_id = ". $cattr['allegro_transaction_id'] ."
-              ;
-        ";
+        $target = array(
+            'unique_col_name' => 'id',
+            'table_name' => 'inpostoc3_custom_attributes'
+        );
+
+        $allowed_keys = array(
+            'id' => null,
+            'shipment_id' => null,
+            'target_point' => null,
+            'dropoff_point' => null,  
+            'sending_method' => null,
+            'dispatch_order_id' => null,
+            'allegro_user_id' => null,
+            'allegro_transaction_id' => null
+        );
+
+        $sql = $this->sqlBuildSimplePartsForInsertOnDupKey(array_intersect_key($cattr, $allowed_keys),$target);
+
         $this->db->query($sql);
         $cattr_id = $this->db->getLastId();
-        return $cattr_id;
+        return ( isset($cattr['id']) ? $cattr['id'] : $cattr_id);
     }
 
     public function saveShipment ($shipment) {
 
-        $sql = "
-            INSERT INTO `inpostoc3_shipments` 
-            (`id`,`order_id`,`service_id`,`number`,`tracking_number`,`status`,`receiver_id`,`additional_services`,`is_return`,`sender_id`)
-            VALUES 
-            ( 
-            '". $shipment['id']."',
-            '". $shipment['order_id']."',
-            '". $shipment['service_id']."',
-            '". $shipment['number']."',
-            '". $shipment['tracking_number']."',
-            '". $shipment['status']."',
-            '". $shipment['receiver_id']."',
-            '". $shipment['additional_services']."',
-            '". $shipment['is_return']."',
-            '". $shipment['sender_id']."'
-            )
-            ON DUPLICATE KEY UPDATE
-              service_id = ". $shipment['service_id'] .",
-              number = ". $shipment['tracking_number'] .",
-              tracking_number = ". $shipment['tracking_number'] .",
-              status = ". $shipment['status'] .",
-              receiver_id = ". $shipment['receiver_id'] .",
-              additional_services = ". $shipment['additional_services'] .",
-              is_return = ". $shipment['is_return'] .",
-              sender_id = ". $shipment['sender_id'] ."
-              ;
-        ";
+        $target = array(
+            'unique_col_name' => 'id',
+            'table_name' => 'inpostoc3_shipments'
+        );
+
+        $allowed_keys = array(
+            'id' => null,
+            'order_id' => null,
+            'service_id' => null,
+            'number' => null,
+            'tracking_number' => null,
+            'status' => null,
+            'receiver_id' => null,
+            'sender_id' => null,
+            'additional_services' => null,
+            'is_return' => null
+        );
+
+        // oc3 uses MyISAM engine - no universal support for transaction for multiple queries, so one by one...
+        $this->log->write(__METHOD__ . '$shipment: ' . print_r($shipment,true));
+        if ( !empty($shipment['receiver']) ) {
+            $shipment['receiver_id'] = $this->saveAddress($shipment['receiver']);
+        }
+        $this->log->write(__METHOD__ . '$shipment[receiver_id] po zapisie: ' . print_r($shipment['receiver_id'],true));
+        $this->log->write(__METHOD__ . '$shipment[receiver] po zapisie: ' . print_r($shipment['receiver'],true));
+        if ( !empty($shipment['sender']) ) {
+            $shipment['sender_id'] = $this->saveAddress($shipment['sender']);
+        }
+
+        $sql = $this->sqlBuildSimplePartsForInsertOnDupKey(array_intersect_key($shipment, $allowed_keys),$target);
         $this->db->query($sql);
         $shipment_id = $this->db->getLastId();
+        ( isset($shipment['id']) ? $shipment_id=$shipment['id'] : '' );
 
-        foreach ( $shipment['parcels'] as $parcel ) {
-            $parcel['shipment_id'] = $shipment_id;
-            $this->saveParcel($parcel);
-        }
-        foreach ( $shipment['custom_attributes'] as $cattr ) {
-            $cattr['shipment_id'] = $shipment_id;
-            $this->saveCustomAttributes($cattr);
+        if($shipment_id) {
+
+            foreach ( $shipment['parcels'] as $parcel ) {
+                $parcel['shipment_id'] = $shipment_id;
+                if( !empty($parcel['template_id']) ) {
+                    $this->saveParcel($parcel);
+                }   
+            }
+
+            if ( !empty($shipment['custom_attributes']) ) {
+                $shipment['custom_attributes']['shipment_id'] = $shipment_id;
+                $this->saveCustomAttributes($shipment['custom_attributes']);
+            }
         }
 
         return $shipment_id;
     }
 
-    public function saveAddress($addr) {
-        //add key check vs allowed keys, array_intersect_key() - first array input, 2nd array filter
-        //one row
-        $columns = "`".implode("`,`",array_keys($addr))."`";
-        foreach($addr as $i => $val) {
-            $escaped_values[] = $this->db->escape($val); //instad of array_map, as uses $this->db->escape for conformity with OC3 framework
+    // builds "insert ... on duplicate key update ..." query
+    // assumes single column being the unique key
+    // requires $target = array ("unique_col_name" => "", "table_name" => "")
+    // requires $input array as flat key => val assoc array containing keys as columns for $target['table_name']
+    protected function sqlBuildSimplePartsForInsertOnDupKey( $inputArr, $target ) {
+        $sql = '';
+        $this->log->write(__METHOD__ . '$inputAtr: ' . print_r($inputArr,true));
+        $columns = "`".implode("`,`",array_keys($inputArr))."`";
+        //instead of array_map('mysqli_real_escape_string', array_values($inputArr)); uses $this->db->escape for conformity with OC3 framework
+        foreach($inputArr as $i => $val) {
+            $escaped_values[] = $this->db->escape($val); 
         }
         $values = "'".implode("','", $escaped_values )."'";
         //$this->log->write(__METHOD__ . '$escaped_values: ' . print_r($escaped_values,true));
-
+        
         //Create an array, with VALUES() Keyword for ON DUPLICATE KEY CASE, cleared from 'id'
         $pseudoArray = explode(",", $columns);
         $finalArr = array();
-        array_walk($pseudoArray, function($val, $key) use (&$pseudoArray, &$finalArr) {
-            if ( $val != 'id') {
+        array_walk($pseudoArray, function($val, $key) use (&$pseudoArray, &$finalArr, $target) {
+            if ( $val != '`'.$target['unique_col_name'].'`' ) {
                 $finalArr[$key] = $val .'=VALUES('.$val.')';
             }
         });
 
         $sql = "
-            INSERT INTO `inpostoc3_address`
+            INSERT INTO `". $target['table_name'] ."`
             ($columns)
             VALUES
             ($values)
             ON DUPLICATE KEY UPDATE
             " . implode(",", $finalArr). ";
         ";
-        $this->log->write(__METHOD__ . 'sql: ' . print_r($sql,true));
-        $this->db->query($sql);
-        $addr_id = $this->db->getLastId();
-        return $addr_id;
+
+         $this->log->write(__METHOD__ . '$sql: ' . print_r($sql,true));
+        return $sql;
     }
 
     protected function sqlBuildSimpleWhere($filter, $keys = array()  ) {
