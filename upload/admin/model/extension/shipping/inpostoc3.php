@@ -439,11 +439,11 @@ class ModelExtensionShippingInPostOC3 extends Model {
         $allowed_keys = array ("id", "order_id", "number", "tracking_number", "receiver_id", "sender_id", "service_id", "is_return");
 
         $sql = $sql . $this->sqlBuildSimpleWhere($filter, $allowed_keys) . ";";
-        $this->log->write(__METHOD__ . ' $sql: ' .$sql);
+        //$this->log->write(__METHOD__ . ' $sql: ' .$sql);
 
         $query = $this->db->query ($sql);
 
-        $this->log->write(__METHOD__ . ' $query: ' . print_r($query,true));
+        //$this->log->write(__METHOD__ . ' $query: ' . print_r($query,true));
         $result = array();
         foreach($query->rows as $row){
             
@@ -466,7 +466,7 @@ class ModelExtensionShippingInPostOC3 extends Model {
 
             $result[$row['id']]=$row;
             
-            $this->log->write(__METHOD__ . ' $row: ' . print_r($row,true));
+            //$this->log->write(__METHOD__ . ' $row: ' . print_r($row,true));
 
         }
         return $result;
@@ -557,7 +557,7 @@ class ModelExtensionShippingInPostOC3 extends Model {
         $sql = $this->sqlBuildSimplePartsForInsertOnDupKey(array_intersect_key($addr, $allowed_keys),$target);
         $this->db->query($sql);
         $addr_id = $this->db->getLastId();
-        $this->log->write(__METHOD__ . '$addr_id: ' . print_r($addr_id,true));
+        // $this->log->write(__METHOD__ . '$addr_id: ' . print_r($addr_id,true));
         // mysql last_insert_id may return 0, if e.g. only one of 2 addresses was updated and the other not at all in two subsequent, very closely done queries.
         // therefore, to avoid breaking relationships, use it only for newly inserted rows.
         return ( isset($addr['id']) ? $addr['id'] : $addr_id );
@@ -632,12 +632,10 @@ class ModelExtensionShippingInPostOC3 extends Model {
         );
 
         // oc3 uses MyISAM engine - no universal support for transaction for multiple queries, so one by one...
-        $this->log->write(__METHOD__ . '$shipment: ' . print_r($shipment,true));
         if ( !empty($shipment['receiver']) ) {
             $shipment['receiver_id'] = $this->saveAddress($shipment['receiver']);
         }
-        $this->log->write(__METHOD__ . '$shipment[receiver_id] po zapisie: ' . print_r($shipment['receiver_id'],true));
-        $this->log->write(__METHOD__ . '$shipment[receiver] po zapisie: ' . print_r($shipment['receiver'],true));
+
         if ( !empty($shipment['sender']) ) {
             $shipment['sender_id'] = $this->saveAddress($shipment['sender']);
         }
@@ -671,7 +669,7 @@ class ModelExtensionShippingInPostOC3 extends Model {
     // requires $input array as flat key => val assoc array containing keys as columns for $target['table_name']
     protected function sqlBuildSimplePartsForInsertOnDupKey( $inputArr, $target ) {
         $sql = '';
-        $this->log->write(__METHOD__ . '$inputAtr: ' . print_r($inputArr,true));
+        //$this->log->write(__METHOD__ . '$inputAtr: ' . print_r($inputArr,true));
         $columns = "`".implode("`,`",array_keys($inputArr))."`";
         //instead of array_map('mysqli_real_escape_string', array_values($inputArr)); uses $this->db->escape for conformity with OC3 framework
         foreach($inputArr as $i => $val) {
@@ -698,7 +696,7 @@ class ModelExtensionShippingInPostOC3 extends Model {
             " . implode(",", $finalArr). ";
         ";
 
-         $this->log->write(__METHOD__ . '$sql: ' . print_r($sql,true));
+        // $this->log->write(__METHOD__ . '$sql: ' . print_r($sql,true));
         return $sql;
     }
 

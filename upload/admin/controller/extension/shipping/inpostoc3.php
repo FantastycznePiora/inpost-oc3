@@ -1041,6 +1041,5 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
 		}
 		return (substr( $haystack, 0, strlen($needle) ) == $needle);
 	}
-
     
 }

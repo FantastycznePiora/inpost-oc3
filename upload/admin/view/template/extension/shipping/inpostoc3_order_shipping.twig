@@ -589,6 +589,7 @@
                         <td class="text-left">
                           <div class="form-group row form-inline" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                             <div class="col-md-12">
+                              {% if shipment.can_edit.sending_method_details %}
                               <select form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}" name="input-inpostoc3[{{order_id}}][shipments][{{ shipment.id }}][parcels][{{ parcel.id }}][template_id]" id="input-inpostoc3-parcel-{{ parcel.id }}-template-id-{{order_id}}-{{ shipment.id }}" class="form-control" style="width: 100%;">
                               <option value="0"
                               {% if not parcel.id %}
@@ -604,6 +605,18 @@
                               >{{ parcel_template.template_identifier }} - {{ parcel_template.max_height}}mm x {{ parcel_template.max_width}}mm x {{ parcel_template.max_length}}mm x {{ parcel_template.max_weight}}kg </option>
                               {% endfor %}
                               </select>
+                              {% else %}
+                              {% for parcel_template in parcel_templates %}
+                              {% if parcel.template_id is same as (parcel_template.id) %}
+                              <span class="form-control"
+                                name="input-inpostoc3[{{order_id}}][shipments][{{ shipment.id }}][parcels][{{ parcel.id }}][template_id]" 
+                                id="input-inpostoc3-parcel-{{ parcel.id }}-template-id-{{order_id}}-{{ shipment.id }}"
+                              >
+                                {{ parcel_template.template_identifier }} - {{ parcel_template.max_height}}mm x {{ parcel_template.max_width}}mm x {{ parcel_template.max_length}}mm x {{ parcel_template.max_weight}}kg
+                              </span>
+                              {% endif %}
+                              {% endfor %}
+                              {% endif %}
                               <input type="hidden" form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}"
                               name="input-inpostoc3[{{order_id}}][shipments][{{ shipment.id }}][parcels][{{ parcel.id }}][id]" id="input-inpostoc3-parcel-{{parcel.id}}-id-{{order_id}}-{{ shipment.id }}"
                               value="{{ parcel.id }}" >
@@ -613,11 +626,27 @@
                             </div>
                           </div>
                         </td>
-                        <td class="text-left">{{ text_parcel_number }}
-
+                        <td class="text-left">
+                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
+                            <div class="col-md-12">
+                              <span class="form-control" style="width: 100%;"
+                              name="input-inpostoc3[{{order_id}}][shipments][{{ shipment.id }}][parcels][{{ parcel.id }}][number]" 
+                              id="input-inpostoc3-parcel-{{parcel.id}}-number-{{order_id}}-{{ shipment.id }}" >
+                                {{ parcel.number ?: text_none }}
+                              </span>
+                            </div>
+                          </div>
                         </td>
-                        <td class="text-left">{{ text_parcel_tracking_number }}
-
+                        <td class="text-left">
+                          <div class="form-group row form-inline" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
+                            <div class="col-md-12">
+                              <span class="form-control" style="width: 100%;"
+                              name="input-inpostoc3[{{order_id}}][shipments][{{ shipment.id }}][parcels][{{ parcel.id }}][tracking_number]" 
+                              id="input-inpostoc3-parcel-{{parcel.id}}-tracking_number-{{order_id}}-{{ shipment.id }}" >
+                                {{ parcel.tracking_number ?: text_none }}
+                              </span>
+                            </div>
+                          </div>
                         </td>
                         <td></td>
                       </tr>
@@ -630,12 +659,12 @@
               <tr>
                 <td colspan="2" class="text-center">
                   <div class="pull-center">
+                    {% if shipment.status is same as('draft') %}
                     <button type="submit" form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}" data-toggle="tooltip" title="{{ button_shipping_save }}" class="btn btn-primary" formaction="{{ action_save }}" data-original-title="Save"><i class="fa fa-save"></i></button> 
+                    {% endif %}
                     <button type="submit" form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}" data-toggle="tooltip" title="{{ button_shipping_print }}" class="btn btn-primary" formaction=""><i class="fa fa-truck"></i></button>
-                    {% if shipment.can_edit.sending_method_details %}
                     <form method="post" enctype="multipart/form-data" id="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}" class="col-md-12">
                     </form>
-                    {% endif %}
                   </div>
                 </td>
               </tr>
