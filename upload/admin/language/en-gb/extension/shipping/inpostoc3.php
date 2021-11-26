@@ -54,6 +54,7 @@ $_['text_addr_post_code']                           = 'Post code';
 $_['text_addr_country_code']                        = 'Country';
 $_['text_addr_new']                                 = '-- Enter new sender details';
 $_['text_click_to_select']                          = 'Click to select...';
+$_['text_order']                                    = 'Order';
 
 // Entry
 $_['entry_status']                                  = 'Status';
