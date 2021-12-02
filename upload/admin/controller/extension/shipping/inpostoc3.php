@@ -1,4 +1,9 @@
 <?php
+/*use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\ClientException;
+// commented out as default Guzzle lib is 5.x and breaks on ssl connection */
+
 class ControllerExtensionShippingInPostOC3 extends Controller {
     private $error = array();
   
@@ -313,18 +318,19 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
         $this->document->addScript('view/javascript/inpostoc3.js');
              
         
-        if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validate()) {
+        if (($this->request->server['REQUEST_METHOD'] == 'POST') && $this->validateShipmentsInOrdersOnPost($this->request->post)) {
 			$this->saveShipments($this->request->post);
             // save data ^^
 			$this->session->data['success'] = 'Shipments saved!';
 
 			$this->response->redirect($this->url->link('extension/shipping/inpostoc3/ordershipping', 'user_token=' . $this->session->data['user_token'] . '&order_id=' . $this->request->get['order_id'], true));
 		}
-        
+
         $data = array ();
         
         if (isset($this->error['warning'])) {
 			$data['error_warning'] = $this->error['warning'];
+            $this->error['warning'] = null;
 		} else {
 			$data['error_warning'] = '';
 		}
@@ -353,10 +359,6 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
 
         // set up the action_ variables to make sure that the form is submitted to proper method. 
         // take users back to the order/list of orders if they click on the Cancel button.
-        $data['action_save'] = $this->url->link('extension/shipping/inpostoc3/ordershipping', 'user_token=' . $this->session->data['user_token'] . '&order_id=' . $this->request->get['order_id'], true);
-        /* redo for each associated shipment
-        $data['action_dispatch'] = $this->url->link('extension/shipping/inpostoc3/dispatchShipment', 'user_token=' . $this->session->data['user_token'], true);
-        */
         $docTitle = $this->language->get('heading_title_order_shipping');
         if(!isset($this->request->get['order_id'])) {
             $data['cancel'] = $data['breadcrumbs'][1]['href'];
@@ -536,7 +538,7 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
                 // can edit shipment, fill in receiver & sender if empty
                 $data["inpostoc3_can_edit_order"] = false;
                 foreach ( $data['shipments'] as $o_shipment ) {
-                    if ($o_shipment['status'] == 'draft' ) {
+                    if ($o_shipment['status'] == $this->model_extension_shipping_inpostoc3->getSHIPMENT_STATUS_DRAFT() ) {
                         $data['shipments'][$o_shipment['id']]['can_edit']['sending_method_details'] = true;
                     } else {
                         $data['shipments'][$o_shipment['id']]['can_edit']['sending_method_details'] = false;
@@ -548,6 +550,9 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
 
                     $data['sender_country_postcode_required'] = $this->isPostCodeRequired($o_shipment["sender"]);
                     $data['receiver_country_postcode_required'] = $this->isPostCodeRequired($o_shipment["receiver"]);
+
+                    $data['action_save_' . $o_shipment['id']] = $this->url->link('extension/shipping/inpostoc3/ordershipping', 'user_token=' . $this->session->data['user_token'] . '&order_id=' . $this->request->get['order_id'], true);
+                    $data['action_dispatch_' . $o_shipment['id']] = $this->url->link('extension/shipping/inpostoc3/ship2InpostApi', 'user_token=' . $this->session->data['user_token'] . '&inpostoc3_shipment_id=' .$o_shipment['id'], true);
                     
                 }
 
@@ -580,7 +585,7 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
     }
 
     public function createShipment(&$data) {
-        $new_shipment['status'] = 'draft';
+        $new_shipment['status'] = $this->model_extension_shipping_inpostoc3->getSHIPMENT_STATUS_DRAFT();
         $new_shipment['order_id'] = $data['order_id'];
         $new_shipment['service_id'] = $data['shipping_code_inpostoc3_service_id'];
         $new_shipment['receiver'] = $data['receiver'];
@@ -598,17 +603,24 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
 
     public function saveShipments($data) {
 
-        $this->log->write(__METHOD__ .' Got submit on save: ' . print_r($data,true));
+        //$this->log->write(__METHOD__ .' Saving shipments from $data: ' . print_r($data,true));
         $this->load->model('extension/shipping/inpostoc3');
         foreach ($data['input-inpostoc3'] as $order ) {
             
             foreach ($order['shipments'] as $shipment ) {
-                $this->log->write(__METHOD__ .' shipment to save struct: ' . print_r($shipment,true));
-                $this->model_extension_shipping_inpostoc3->saveShipment($shipment);
+                //$this->log->write(__METHOD__ .' shipment to save struct: ' . print_r($shipment,true));
+                // grab shipment status - if it's been sent already, can't save
+                unset($filter);
+                $filter['id'] = $shipment['id'];
+                $shpmnts = $this->model_extension_shipping_inpostoc3->getShipments( $filter );
+                $s = reset($shpmnts); //there must be one or none
+                if (empty($s) || $s['status'] == $this->model_extension_shipping_inpostoc3->getSHIPMENT_STATUS_DRAFT() ) {
+                    $this->model_extension_shipping_inpostoc3->saveShipment($shipment);
+                } else {
+                    $this->error["warning"] = $this->language->get('error_shipment_already_saved');
+                }
             }
-
         }
-
     }
 
 
@@ -719,27 +731,16 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
             }
         }
         // else continue with default behaviour
+        // TODO (perhaps): in case of POST there's a list of order ids
+        /*
+        $this->request->post["selected"] zawiera numerki
+        Dla kazdego sprawdzic, czy jest shipment w module. Jesli tak
+        - status wyzszy niz draft - unset tu i do nowej zmiennej, pobrac w petli labele i do zmiennej, wstrzyknąc twig z labelami do sale/order/shipping twig
+        - status draft - walidacja, czy są kompletne do wysylki (wszystkie wymagane dane) i stworzyc label lub olac, dostrzyknąć tylko link 'GenerateLabel'
+        - pomysł: zapisać otrzymane labele w DB, kwestia prędkości działania
+        */
         return $ret;
     }
-
-
-    // TODO: druk listu przewozowego
-    // 1. wpiąc się na before event dla view/sale/order_shipping +
-    // 2. sprawdzić, czy metoda to inpostoc3, serwis do paczek && API włączone +
-    // 2.1 NIE -> dorzucić do template twig z danymi docelowego paczkomatu, na razie to bedzie wszystko - done
-    // 2.2 TAK -> podmienić całościowo twig! Musi ładowac geowidget do wyboru punktów
-    // 2.2.1 - Jesli shipment do danego ordera jeszcze nie istnieje w tabelkach inpost, czy dispatch_order (2) czy parcel_locker (1)
-    // 2.2.1.1 (parcel_locker) 
-    // - punkt nadania musi być wskazany, można zmienić punkt odbioru jeszcze
-    // - rozmiar paczki można jeszcze ręcznie zmienić, podczytac wybrany + waga
-    // - powiadomienie mailem, default yes, cod = false, 
-    // - dane odbiorcy: nazwisko, mail, telefon, adres (z order), refrence to numer zamowienia
-    // - SUBMIT:
-    //  a) zapis danych w tabelkach inpostoc3
-    //  b) request przez wewn. API z id shipmentu -> tam zbudowany zostanie finalny request zakładający paczkę w InPost (jesli dany shipment jest procesowany pierwszy raz)
-    //  c) na error wyswietlic komunikat, na sukces -> strzal do wewn. API -> api InPost, pobranie labela w formie PDF i wyswietlenie na ekranie 
-    // 2.2.1.2 (dispatch_order) - na razie zostawić w spokoju, w przyszlosci selekcja adresu store jako punktu, do ktorego ma przyjechac kurier po paczke
-    // 2.2.2 jesli shipment do danego ordera juz istnieje, to tylko strzal via API po PDF z labelem
 
     public function validateNewShipment($shipment) {
 
@@ -747,8 +748,78 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
             $this->error['warning'] = $this->language->get('error_insufficient_shipment_data');
             $this->log->write(__METHOD__ . ' ' . $this->error['warning']);
         }
-
         return !$this->error;
+    }
+
+    public function validateShipmentsInOrdersOnPost($data) {
+
+        $noerr = true ;
+
+        $this->load->language('extension/shipping/inpostoc3'); 
+        $this->load->model('extension/shipping/inpostoc3');
+
+        foreach ($data['input-inpostoc3'] as $order ) {    
+            foreach ($order['shipments'] as $shipment ) {
+                //$this->log->write(__METHOD__ .' shipment to validate struct: ' . print_r($shipment,true));
+                $noerr = $noerr && $this->validateShipmentOnPost($shipment);
+            }
+        }
+
+        return $noerr;
+    }
+
+    public function validateShipmentOnPost($shipment) {
+        $noerr = true ;
+        $errlog ='';
+
+        $this->load->language('extension/shipping/inpostoc3'); 
+        $this->load->model('extension/shipping/inpostoc3');
+
+        if ( empty($shipment['order_id']) ||
+            empty($shipment['service_id']) || $shipment['service_id'] == $this->model_extension_shipping_inpostoc3->getNONE() ||
+            empty($shipment['custom_attributes']['sending_method']) || $shipment['custom_attributes']['sending_method'] == $this->model_extension_shipping_inpostoc3->getNONE() ||
+            empty($shipment['sender_id']) ||
+            empty($shipment['receiver_id']) ||
+            ( empty($shipment['sender']['company_name']) && empty($shipment['sender']['first_name']) && empty($shipment['sender']['last_name'])  ) ||
+            empty($shipment['sender']['email']) ||
+            empty($shipment['sender']['phone']) ||
+            (  (empty($shipment['sender']['street']) || empty($shipment['sender']['building_number'])) && ( empty($shipment['sender']['line1']) && empty($shipment['sender']['line2']) ) ) ||
+            empty($shipment['sender']['city']) ||
+            empty($shipment['sender']['post_code']) ||
+            ( empty($shipment['receiver']['company_name']) && empty($shipment['receiver']['first_name']) && empty($shipment['receiver']['last_name'])  ) ||
+            empty($shipment['receiver']['email']) ||
+            empty($shipment['receiver']['phone']) ||
+            (  (empty($shipment['receiver']['street']) || empty($shipment['receiver']['building_number']) ) && ( empty($shipment['receiver']['line1']) && empty($shipment['receiver']['line2']) ) )||
+            empty($shipment['receiver']['city']) ||
+            empty($shipment['receiver']['post_code']) ||
+            empty($shipment['parcels'])
+        ) {
+            $noerr = false;
+            $errlog .= ' [ERROR: Service or address details missing!]';
+        }
+        if ( !preg_match("/[0-9]{9}/",$shipment['receiver']['phone']) || !preg_match("/[0-9]{9}/",$shipment['sender']['phone']) ) {
+            $noerr = false;
+            $this->error['warning'] = "Wrong phone number format - must be 9 digits!";
+            $errlog .= ' [ERROR: Wrong phone number format - must be 9 digits!]';
+        }
+        if ( !filter_var($shipment['receiver']['email'], FILTER_VALIDATE_EMAIL) || !filter_var($shipment['sender']['email'], FILTER_VALIDATE_EMAIL) ) {
+            $noerr = false;
+            $this->error['warning'] = "Invalid email format!";
+            $errlog .= ' [ERROR: Invalid email format!]';
+        }
+        if ( $noerr 
+            && $shipment['custom_attributes']['sending_method'] == $this->model_extension_shipping_inpostoc3->getSENDING_METHODS()['parcel_locker']['id'] 
+            && ( empty($shipment['custom_attributes']['dropoff_point']) || empty($shipment['custom_attributes']['target_point']) ) 
+            ) { 
+            $noerr = false; 
+            $errlog .= ' [ERROR: Send via Parcel locker vs. dropofff/target point failed!]';
+        }
+        if (!$noerr) {
+            if ( empty( $this->error['warning'] ) ) { $this->error['warning'] = $this->language->get('error_insufficient_shipment_data'); }
+            $this->log->write(__METHOD__ . ' ' . $this->error['warning'] . ' ' . $errlog . ' $shipment: ' . print_r($shipment,true));
+        }
+        return $noerr;
+
     }
 
     // ==== for AJAX calls and dynamic dropdown filling ===============================================================
@@ -787,12 +858,12 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
     // get details of specific sending method
     public function sendingMethod() {
         $json = array();
+        $this->load->model('extension/shipping/inpostoc3');
+        $this->load->language('extension/shipping/inpostoc3');
 
-        if ( !isset($this->request->get['sending_method_id']) || $this->request->get['sending_method_id'] == 0 ) {
+        if ( !isset($this->request->get['sending_method_id']) || $this->request->get['sending_method_id'] == $this->model_extension_shipping_inpostoc3->getNONE() ) {
             $json['error']['warning'] = $this->language->get('error_no_sending_method');
         } else {
-            $this->load->model('extension/shipping/inpostoc3');
-            $this->load->language('extension/shipping/inpostoc3');
 
             $filter['id'] = $this->request->get['sending_method_id'];
             $sending_methods = $this->model_extension_shipping_inpostoc3->getSendingMethods($filter);
@@ -1041,5 +1112,427 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
 		}
 		return (substr( $haystack, 0, strlen($needle) ) == $needle);
 	}
+
+    // ==================== ShipX API part 
+    // guzzleHttp in default version 5.x in oc 3.0.3.6 - breaks on SSL connection while regular, up to date curl - not; to the hell with outdated Guzzle then
+
+    // shipping - entry point, API comms & grabbing labels (maybe save them to DB)
+    public function ship2InpostApi() {
+        
+        $data = array ();
+        
+        if (isset($this->error['warning'])) {
+			$data['error_warning'] = $this->error['warning'];
+            $this->error['warning'] = null;
+		} else {
+			$data['error_warning'] = '';
+		}
+        
+        if (!$this->isUserAuthorized()) {
+            $this->response->redirect( $data['home'] );
+        }
+        if (!$this->_is_curl_installed()) {
+            $this->error["warning"] = $this->language->get('error_curl_not_installed');
+            $this->log->write(__METHOD__ .' '.$this->error["warning"]);
+            return $this->error["warning"];
+        }
+        
+        $orders = array();
+        $this->load->model('extension/shipping/inpostoc3');
+        $data['entry_method'] = $this->request->server['REQUEST_METHOD'];
+        if ( isset($this->request->post['input-inpostoc3'])  ) {
+            $orders=$this->request->post['input-inpostoc3']; //orders under 'input-inpostoc3'
+            $data["posted"]=print_r($orders,true);
+            foreach($orders as $order) {
+                $api_config = $this->getApiConfig($order['geo_zone_id']);
+                foreach($order['shipments'] as $shipment) {
+                    $shipment['error'] = !$this->validateShipmentOnPost($shipment);
+                    if ( $shipment['error']) {
+                        $shipment['error_warning'] = $this->error['warning'];   // record error for displaying later, continue
+                        $this->error['warning'] = null;
+                    } else {
+                        unset($filter);
+                        $filter['id'] = $shipment['id'];
+                        $svcs = $this->model_extension_shipping_inpostoc3->getShipments( $filter );
+                        $s = reset($svcs); //there must be one or none
+                        if (empty($s) || $s['status'] == $this->model_extension_shipping_inpostoc3->getSHIPMENT_STATUS_DRAFT() ) {
+                            if ( $this->model_extension_shipping_inpostoc3->saveShipment($shipment) > 0 ) { //save shipment and validate succesful save
+                                // create shipment via api
+                                $resp = $this->apiPostShipment($api_config, $shipment);
+                                $this->handleShipmentPostGetResponse($shipment,$resp);
+                            }
+                        }
+                        if ( !empty($shipment['number']) ) {
+                            //shipment already sent via API, just get shipment & get label
+                            $resp = $this->apiGetShipment($api_config, $shipment);
+                            $this->handleShipmentPostGetResponse($shipment,$resp);
+                        }
+                        if (!$shipment['error'] {
+                            //get label here
+                        })
+                        
+                    }
+                }
+            }
+            $this->log->write(__METHOD__ .' there\'s a POST received!');
+        }
+        if ( isset($this->request->get['inpostoc3_shipment_id'])  ) {
+            $shipments[$this->request->get['inpostoc3_shipment_id']]['id'] = $this->request->get['inpostoc3_shipment_id'];
+            $this->log->write(__METHOD__ .' there\'s a GET received!');
+        } // elseif posted collection, assign it to $shipments
+
+        /*
+        foreach($shipments as $shipment) {
+            
+            $s = $this->model_extension_shipping_inpostoc3->getShipments($shipment);
+            foreach($s as $s_row) {
+                ( $shipment['id'] != $s_row['id']  ) ?: $shipment = $s_row;
+            }
+
+            $shipping_code = $this->model_extension_shipping_inpostoc3->getShippingCodeFromOrder($shipment['order_id']);
+            $details = array();
+            $this->fillDataWithDetailsFromShippingCodeDetails( explode('.',$shipping_code), $details);
+
+            $shipment['api_config'] = $this->getApiConfig($details['shipping_code_inpostoc3_geo_zone_id']);
+            $data['api_resp'] = $this->apiGetOrganization($shipment['api_config']);
+        }
+        */
+        $data["orders"] = $orders;
+        
+        $this->displayApiLabels($data);
+    }
+
+    // display labels in standalone view
+    public function displayApiLabels($data) {
+        $this->response->setOutput($this->load->view('extension/shipping/inpostoc3_api_shipping', $data));
+    }
+  
+    // POST Create Shipment
+    protected function apiPostShipment($api_config,$shipment) {
+        
+        //$payload = $this->mapShipmentToJsonRequestBody($shipment);
+        // test env wickery due to limited points available in ai sandbox
+        /*
+        if ($api_config['use_sandbox_api'] {
+            $shipment['custom_attributes']['dropoff_point'] = "GDA008";
+            $shipment['custom_attributes']['target_point'] = "ZGO171";
+        })
+        */
+        $req = array(
+            'baseurl' => ($api_config['use_sandbox_api'] ? $api_config['sandbox']['api_endpoint'] : $api_config['production']['api_endpoint'] ) , //plus route
+            'route' => "/v1/organizations/" .  ($api_config['use_sandbox_api'] ? $api_config['sandbox']['api_org_id'] : $api_config['production']['api_org_id'] ) . "/shipments",
+            'method' => 'POST' ,
+            'body' => $this->mapShipmentToJsonRequestBody($shipment),
+            'queryParams' => null
+        );        
+        $this->log->write(__METHOD__.'  $req  : '.print_r($req,true));
+
+        $response = $this->sendRequestViaCurl($api_config,$req);
+        //$this->log->write(__METHOD__.'  $response  : '.print_r($response,true));
+
+        return $response;
+    }
+
+    // Get Shipment data - update shipment data
+    protected function apiGetShipment($api_config,$shipment) {
+        $req = array(
+            'baseurl' => ($api_config['use_sandbox_api'] ? $api_config['sandbox']['api_endpoint'] : $api_config['production']['api_endpoint'] ) , //plus route
+            'route' => "/v1/shipments/" .  $shipment['number'],
+            'method' => 'GET' ,
+            'body' => null,
+            'queryParams' => null
+        );
+        //$this->log->write(__METHOD__.' the $req: '.print_r($req,true));
+
+        $response = $this->sendRequestViaCurl($api_config,$req);
+        //$this->log->write(__METHOD__.'  $response  : '.print_r($response,true));
+
+        return $response;
+    }
+
+    // GET Label for shipment
+    protected function apiGetShipmentLabel($api_config,$shipment) {
+
+    }
+
+    // GET tracking status for manually trigerred tracking statuses refreshes - TODO webhook in future for automatic notifications from InPost
+
+    // GET organization - a test call
+    protected function apiGetOrganization($api_config) {
+        $req = array(
+            'baseurl' => ($api_config['use_sandbox_api'] ? $api_config['sandbox']['api_endpoint'] : $api_config['production']['api_endpoint'] ) , //plus route
+            'route' => "/v1/organizations/" .  ($api_config['use_sandbox_api'] ? $api_config['sandbox']['api_org_id'] : $api_config['production']['api_org_id'] ) ,
+            'method' => 'GET' ,
+            'body' => null,
+            'queryParams' => null
+        );
+        //$this->log->write(__METHOD__.' the $req: '.print_r($req,true));
+
+        $response = $this->sendRequestViaCurl($api_config,$req);
+        //$this->log->write(__METHOD__.'  $resp  : '.print_r($response,true));
+
+        return $response;
+    }
+
+
+    // helper: get API configuration from settings (need to read geozone from order/shipping code and use settings for proper geozone)
+    protected function getApiConfig($geozone_id) {
+        
+        $api_config = array ();
+
+        $this->load->model('setting/setting');
+
+        $api_config['geozone_id'] = $geozone_id;
+        $api_config['use_api'] = $this->config->get('shipping_inpostoc3_' . $geozone_id . '_use_api');
+        //$this->log->write(__METHOD__.' the $api_config: '.print_r($api_config,true));
+        if ( !$api_config['use_api'] ) {
+        return null;
+        }
+
+        $api_config['use_sandbox_api'] = $this->config->get('shipping_inpostoc3_' . $geozone_id . '_use_sandbox_api');
+        $api_config['sandbox']['api_endpoint'] = $this->config->get('shipping_inpostoc3_' . $geozone_id . '_sandbox_api_endpoint');
+        $api_config['sandbox']['api_token'] = $this->config->get('shipping_inpostoc3_' . $geozone_id . '_sandbox_api_token');
+        $api_config['sandbox']['api_org_id'] = $this->config->get('shipping_inpostoc3_' . $geozone_id . '_sandbox_api_org_id');
+        $api_config['production']['api_endpoint'] = $this->config->get('shipping_inpostoc3_' . $geozone_id . '_api_endpoint');
+        $api_config['production']['api_token'] = $this->config->get('shipping_inpostoc3_' . $geozone_id . '_api_token');
+        $api_config['production']['api_org_id'] = $this->config->get('shipping_inpostoc3_' . $geozone_id . '_api_org_id');
+        
+        /* some additional for the logic later
+        $this->config->get('shipping_inpostoc3_' . $geozone_id . '_sending_method');
+        $this->config->get('shipping_inpostoc3_' . $geozone_id . '_' . $inpost_service['id'] . '_sendfrom');
+        $this->config->get('shipping_inpostoc3_'. $geozone_id . '_' . $inpost_service['id'] . '_status');
+        */
+
+        $this->log->write(__METHOD__.' the $api_config: '.print_r($api_config,true));
+        return $api_config;
+    }
+
+    // helper: is user authorized, double check - the controller may be called outside of OC3 web pages, injecting parameters into call
+    protected function isUserAuthorized() {
+        $unauthorized = true;
+
+        $unauthorized = (!isset($this->request->get['user_token']) || !isset($this->session->data['user_token']) || ($this->request->get['user_token'] != $this->session->data['user_token']));
+
+        if ($unauthorized) { // erase session data and force login via web interface in case it's a case of url with wrong token
+        $data['logged'] = '';
+                $data['home'] = $this->url->link('common/dashboard', '', true);
+        }
+
+        return !$unauthorized;
+    }
+
+    // helper: build options for curl
+    protected function buildCurlOpts($api_config,$req) {
+
+        $options = array();
+        switch($req['method']) {
+            case 'GET' : {
+                $options[CURLOPT_RETURNTRANSFER] = true;
+                break;
+            }
+            case 'POST' : {
+                $options[CURLOPT_POSTFIELDS] = $req['body'];
+                $options[CURLOPT_RETURNTRANSFER] = true;
+                break;
+            }
+        }
+        
+        $options[CURLOPT_URL] = $req['baseurl'] . $req['route'];
+        //$options[CURLOPT_HEADER] = true;
+        $options[CURLINFO_HEADER_OUT] = true;
+        $options[CURLOPT_HTTPHEADER] = array(
+            'Authorization: Bearer '. ( $api_config['use_sandbox_api'] ? $api_config['sandbox']['api_token'] : $api_config['production']['api_token'] ),
+            'Host: ' . preg_replace("/.+:\/\//", "",( $api_config['use_sandbox_api'] ? $api_config['sandbox']['api_endpoint'] : $api_config['production']['api_endpoint'] )),
+            'Content-type: application/json',
+            'X-Request-ID: ' . $this->GUID()
+        );
+
+        //$this->log->write(__METHOD__.' the $options: '.print_r($options,true));
+        return $options;
+        /* some scratchpad reference for options to be used
+        $options = array(
+            CURLOPT_URL            => $req['baseurl'] . $req['route'],
+            CURLOPT_RETURNTRANSFER => true,     // return web page
+            //CURLOPT_HEADER         => true ,    // return headers
+            //CURLOPT_FOLLOWLOCATION => true,     // follow redirects
+            //CURLOPT_ENCODING       => "",       // handle all encodings
+            //CURLOPT_USERAGENT      => "curl", // who am i
+            //CURLOPT_AUTOREFERER    => true,     // set referer on redirect
+            //CURLOPT_CONNECTTIMEOUT => 120,      // timeout on connect
+            //CURLOPT_TIMEOUT        => 120,      // timeout on response
+            //CURLOPT_MAXREDIRS      => 10,       // stop after 10 redirects
+            //CURLOPT_SSL_VERIFYPEER => false,     // Disabled SSL Cert checks
+            CURLOPT_HTTPHEADER     => array(
+                //'Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJkVzROZW9TeXk0OHpCOHg4emdZX2t5dFNiWHY3blZ0eFVGVFpzWV9TUFA4In0.eyJleHAiOjIxMzg4ODE1NzYsImlhdCI6MTYzNDMwNTU3NiwianRpIjoiMzhkY2IzNjEtMTdjZS00N2U5LWE3MzUtMzRhMjgwMmYwMjY1IiwiaXNzIjoiaHR0cHM6Ly9zYW5kYm94LWF1dGguZWFzeXBhY2syNC5uZXQvYXV0aC9yZWFsbXMvZXh0ZXJuYWwiLCJzdWIiOiJmOjdmYmY0MWJhLWExM2QtNDBkMy05NWY2LTk4YTJiMWJhZTY3YjptaWNoYWwucnliaW5za2lAZ21haWwuY29tIiwidHlwIjoiQmVhcmVyIiwiYXpwIjoic2hpcHgiLCJzZXNzaW9uX3N0YXRlIjoiY2EzOGIwZTctZDY4Yi00Y2VkLWI4NTMtZTU5ZjI5YmM1ZGVmIiwiYWNyIjoiMSIsInNjb3BlIjoib3BlbmlkIGFwaTphcGlwb2ludHMgYXBpOnNoaXB4IiwiYWxsb3dlZF9yZWZlcnJlcnMiOiIiLCJ1dWlkIjoiOWVkOGJhZTctYzhiOS00YTkxLWI4OWUtMjBlMDVjNTVlNzU5IiwiZW1haWwiOiJtaWNoYWwucnliaW5za2lAZ21haWwuY29tIn0.CyOhYj9J3EU0G2MJw26VcUS8xzNDSiSHwcCGZNxc7devX91PFqABVCa27LD7DzDIQqnG_7cT6PSj3gtAu14mSu5YNGoC8PRJFGXJf2VB36ZQFZsuE2dazRAkWqlq6Kn3M0hYftUcf4TWGrJm6CwILSgKFcvrjYeVIhjoXKof-gZuXFfu4bnaXBum1OCtH007pkxEeXsJErYuwnfIHKlvXmEStrulmlzNn-c01D4zP5TXqxMIMPuz0IMIuzrucLp6SfPiLgxAy-W_p8McjEbZUE5GkYPN-xNdS9TeRa_LhbY7BqG0lgCz-DHBfg1rPSM_tr1EdKz1iWsC7eADNAy_5g', 
+                'Authorization: Bearer '. ( $api_config['use_sandbox_api'] ? $api_config['sandbox']['api_token'] : $api_config['production']['api_token'] ),
+                'Host: sandbox-api-shipx-pl.easypack24.net', //. ( $api_config['use_sandbox_api'] ? $api_config['sandbox']['api_endpoint'] : $api_config['production']['api_endpoint'] ),
+                //'X-Request-ID: '. $this->GUID(),
+                'Content-Type: application/json'
+            )
+        );*/
+    }
+
+    protected function sendRequestViaCurl($api_config,$req) {
+
+        $resp['headers'] = array();
+        
+        $ch = curl_init();
+        curl_setopt_array($ch, $this->buildCurlOpts($api_config,$req));
+        // this function is called by curl for each header received
+        curl_setopt($ch, CURLOPT_HEADERFUNCTION,
+            function($curl, $header) use (&$resp)
+            {
+            $len = strlen($header);
+            $header = explode(':', $header, 2);
+            if (count($header) < 2) // ignore invalid headers
+                { return $len; }
+
+                $resp['headers'][strtolower(trim($header[0]))][] = trim($header[1]);
+
+            return $len;
+            }
+        );
+        $resp['body'] = curl_exec($ch);
+        $resp['body_json_decode'] = json_decode($resp['body'],true);
+        $resp['info'] = curl_getinfo($ch);
+        //$this->log->write(__METHOD__.' $resp: '.print_r($resp,true));
+        if ( $resp['info']['http_code'] != 200 ) {
+            $this->log->write(__METHOD__.' Not 200 (OK)! $resp: '.print_r($resp,true));
+            $this->error["warning"] = $resp['body'];
+        }
+        // TODO: write request and response to DB as log if respective setting in configuration enabled
+        curl_close($ch);
+
+        return $resp;
+    }
+    // helper - handle response for post/get shipment
+    protected function handleShipmentPostGetResponse(&$shipment,$resp) {
+        if ($resp['info']['http_code'] == 200 ) {
+            $this->mapResponseToShipment($shipment,$resp);
+            $this->model_extension_shipping_inpostoc3->saveShipment($shipment) ;
+         } else {
+             $this->error["warning"] = "Problem with action on shipment via API! Try again later.";
+             $this->log->write(__METHOD__.' '.$this->error["warning"].' $resp  : '.print_r($resp,true));
+             $shipment["error"] = true;
+             $shipment['error_warning'] = $resp['body'];
+         }
+    }
+
+
+    // helper: serialize data to JSON to quickly build requests
+    protected function mapShipmentToJsonRequestBody($shipment) {
+        $json = array();
+        $this->load->model('extension/shipping/inpostoc3');
+
+        $this->log->write(__METHOD__.'  $shipment  : '.print_r($shipment,true));
+
+        $json['reference'] = $shipment['order_id'];
+        unset($filter);
+        $filter['id'] = $shipment['service_id'];
+        $services = $this->model_extension_shipping_inpostoc3->getServices( $filter );
+        $service = reset($services); //get only one
+        $json['service'] = $service['service_identifier'];
+        $json['comments'] = 'Created by user id: '. $this->session->data['user_id'];
+        if ( !empty($shipment['custom_attributes']) ) {
+            unset($filter);
+            $filter['id'] = $shipment['custom_attributes']['sending_method'];
+            $sm = $this->model_extension_shipping_inpostoc3->getSendingMethods( $filter );
+            $sending_method = reset($sm); //get only one
+            $json['custom_attributes']['sending_method'] = $sending_method['sending_method_identifier'];
+            $json['custom_attributes']['target_point'] = $shipment['custom_attributes']['target_point'];
+            if ( $shipment['custom_attributes']['sending_method'] ==  $this->model_extension_shipping_inpostoc3->getSENDING_METHODS()['parcel_locker']['id'] ) {
+                $json['custom_attributes']['dropoff_point'] = $shipment['custom_attributes']['dropoff_point'];
+            }     
+        }
+        $index = 0;
+        foreach ($shipment['parcels'] as $parcel) {
+            $json['parcels'][$index]['id']          = $parcel['id'];
+            $filter['id'] = $parcel['template_id'];
+            $ts = $this->model_extension_shipping_inpostoc3->getParcelTemplates( $filter);
+            $t = reset ($ts ); //get only one - first one
+            $json['parcels'][$index]['template']    = $t['template_identifier'];
+            $index++;
+        }
+
+        $json['sender']['name'] =                       $shipment['sender']['name'];
+        $json['sender']['company_name'] =               $shipment['sender']['company_name'];
+        $json['sender']['first_name'] =                 $shipment['sender']['first_name'];
+        $json['sender']['last_name'] =                  $shipment['sender']['last_name'];
+        $json['sender']['email'] =                      $shipment['sender']['email'];
+        $json['sender']['phone'] =                      $shipment['sender']['phone'];
+        if ( !empty($shipment['sender']['street']) || !empty($shipment['sender']['building_number']) ) {
+            $json['sender']['address']['street'] =          $shipment['sender']['street'];
+            $json['sender']['address']['building_number'] = $shipment['sender']['building_number'];
+        } 
+        if ( !empty($shipment['sender']['line1']) ) {
+            $json['sender']['address']['line1'] =           $shipment['sender']['line1'];
+            $json['sender']['address']['line2'] =           $shipment['sender']['line2'];
+        }
+        $json['sender']['address']['city'] =            $shipment['sender']['city'];
+        $json['sender']['address']['post_code'] =       $shipment['sender']['post_code'];
+        $json['sender']['address']['country_code'] =    $shipment['sender']['country_iso_code_2'];
+
+        $json['receiver']['name'] =                       $shipment['receiver']['name'];
+        $json['receiver']['company_name'] =               $shipment['receiver']['company_name'];
+        $json['receiver']['first_name'] =                 $shipment['receiver']['first_name'];
+        $json['receiver']['last_name'] =                  $shipment['receiver']['last_name'];
+        $json['receiver']['email'] =                      $shipment['receiver']['email'];
+        $json['receiver']['phone'] =                      $shipment['receiver']['phone'];
+        if ( !empty($shipment['receiver']['street']) || !empty($shipment['receiver']['building_number']) ) {
+            $json['receiver']['address']['street'] =          $shipment['receiver']['street'];
+            $json['receiver']['address']['building_number'] = $shipment['receiver']['building_number'];
+        } 
+        if (!empty($shipment['receiver']['line1']) ){
+            $json['receiver']['address']['line1'] =           $shipment['receiver']['line1'];
+            $json['receiver']['address']['line2'] =           $shipment['receiver']['line2'];
+        }
+        $json['receiver']['address']['city'] =            $shipment['receiver']['city'];
+        $json['receiver']['address']['post_code'] =       $shipment['receiver']['post_code'];
+        $json['receiver']['address']['country_code'] =    $shipment['receiver']['country_iso_code_2'];
+
+
+        return json_encode($json, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_NUMERIC_CHECK);
+    }
+
+    // helper: deserialize synchronous responses to have data to update shipment entity
+    protected function mapResponseToShipment(&$shipment,$resp) {
+        $shipment['status']             = $resp['body_json_decode']['status'];
+        $shipment['number']             = $resp['body_json_decode']['id'];
+        $shipment['tracking_number']    = $resp['body_json_decode']['tracking_number'];
+        foreach ($resp['body_json_decode']['parcels'] as $parcel ) {
+            //unfortunately nearly random sequence, as inpost api doesn't return sent parcel id
+            // match by sent data only :-(
+            $filter['template_identifier'] = $parcel['template'];
+            $ts = $this->model_extension_shipping_inpostoc3->getParcelTemplates( $filter);
+            $t = reset ($ts ); //get only one - first one
+            foreach ($shipment['parcels'] as $s_parcel ) {
+                // settle for first match, sorry, no parcel.id returned
+                if ($s_parcel['template_id'] == $t['id'] ) {
+                    $s_parcel['number']             = $parcel['id'];
+                    $s_parcel['tracking_number']    = $parcel['tracking_number'];
+                }
+            }
+        }
+    }
+
+    // helper: check for curl installation
+    protected function _is_curl_installed() {
+        if  (in_array  ('curl', get_loaded_extensions())) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    
+    // helper: GUID generator
+    protected function GUID() {
+        if (function_exists('com_create_guid') === true)
+        {
+            return trim(com_create_guid(), '{}');
+        }
+
+        return sprintf('%04X%04X-%04X-%04X-%04X-%04X%04X%04X', mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(16384, 20479), mt_rand(32768, 49151), mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535));
+    }
     
 }

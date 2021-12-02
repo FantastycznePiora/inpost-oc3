@@ -110,7 +110,7 @@ $(document).ready(function() {
                 $("#input-inpostoc3-sender-email-"+ ending ).val(sObj["email"]);
                 $("#input-inpostoc3-sender-phone]-"+ ending ).val(sObj["phone"]);
                 $("#input-inpostoc3-sender-addr-street-"+ ending ).val(sObj["street"]);
-                $("#input-inpostoc3-sender-addr-building-number-"+ ending ).val(sObj["building_number"]);
+                $("#input-inpostoc3-sender-addr-building_number-"+ ending ).val(sObj["building_number"]);
                 $("#input-inpostoc3-sender-addr-line-1-"+ ending ).val(sObj["line1"]);
                 $("#input-inpostoc3-sender-addr-line-2-"+ ending ).val(sObj["line2"]);
                 $("#input-inpostoc3-sender-addr-city-"+ ending ).val(sObj["city"]);
@@ -131,6 +131,58 @@ $(document).ready(function() {
       $("#input-inpostoc3-sender-selected-point-" + items[4] + '-' + items[5] ).prop('disabled', true);
     }
   });
+
+  // make either address lines or street & building not required - 2 functions
+  var $inputs_addr_line = $('[id*="-addr-line-1-"],[id*="-addr-line-2-"]');
+  $inputs_addr_line.on('input', function () {
+      // Set the required property of the other input to false if this input is not empty.
+      var items = $(this).attr('id').split('-');
+      var elid = {};
+      elid.beginning = items[0] + '-' + items[1] + '-' + items[2];
+      elid.end = items[6] + '-' + items[7];
+      if ( $('#' + elid.beginning + '-addr-building_number-' + elid.end).val().length > 0  
+          ||  $('#' + elid.beginning + '-addr-street-' + elid.end).val().length > 0
+      ) {
+        $('#' + elid.beginning + '-addr-building_number-' + elid.end).prop('required', true);
+        $('#' + elid.beginning + '-addr_building_number_row-' + elid.end).addClass("required");
+        $('#' + elid.beginning + '-addr-street-' + elid.end).prop('required', true);
+        $('#' + elid.beginning + '-addr_street_row-' + elid.end).addClass("required");
+      } else {
+        $('#' + elid.beginning + '-addr-building_number-' + elid.end).prop('required', !$(this).val().length);
+        $('#' + elid.beginning + '-addr_building_number_row-' + elid.end).removeClass("required");
+        $('#' + elid.beginning + '-addr-street-' + elid.end).prop('required', !$(this).val().length);
+        $('#' + elid.beginning + '-addr_street_row-' + elid.end).removeClass("required");
+        $(this).prop('required', true);
+        $('#'+ elid.beginning + '-' + items[3] + '_' + items[4] + '_' + items[5] + '_row-' + elid.end).addClass("required");
+      }
+  });
+
+  var $inputs_street_buildingno = $('[id*="-addr-building_number-"],[id*="-addr-street-"]');
+  $inputs_street_buildingno.on('input', function () {
+    var items = $(this).attr('id').split('-');
+    var elid = {};
+    elid.beginning = items[0] + '-' + items[1] + '-' + items[2];
+    elid.end = items[5] + '-' + items[6];
+    $('#' + elid.beginning + '-addr-line-1-' + elid.end).prop('required', !$(this).val().length);
+    $('#' + elid.beginning + '-addr_line_1_row-' + elid.end).removeClass("required");
+    $('#' + elid.beginning + '-addr-line-2-' + elid.end).prop('required', !$(this).val().length);
+    $('#' + elid.beginning + '-addr_line_2_row-' + elid.end).removeClass("required");
+    $('#'+ elid.beginning + '-addr_building_number-' + elid.end).prop('required', true);
+    $('#'+ elid.beginning + '-addr_building_number_row-' + elid.end).addClass("required");
+    $('#'+ elid.beginning + '-addr_street-' + elid.end).prop('required', true);
+    $('#'+ elid.beginning + '-addr_street_row-' + elid.end).addClass("required");
+  });
+
+  /*
+  var $required_inputs = $(":input[required]");
+  $required_inputs.on('input', function() {
+    var formid = $(this).attr('form');
+    console.log('#'+formid+' input[required]');
+    $('#'+formid+' input[required]').each( function(i) {
+     if ( $(this).val()=="" ) { console.log('o-o, empty' + $(this).attr('id') ); } 
+    });
+  });
+  */
 
 });
 

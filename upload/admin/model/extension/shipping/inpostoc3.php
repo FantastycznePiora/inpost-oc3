@@ -1,6 +1,25 @@
 <?php
 
 class ModelExtensionShippingInPostOC3 extends Model {
+    const NONE = 0;
+    const SENDING_METHODS = array(
+        "parcel_locker" => array (
+            "id" => 1,
+            "sending_method_identifier" => "parcel_locker"
+        )
+    );
+    const SHIPMENT_STATUS_DRAFT = 'draft'; 
+
+    public function getSHIPMENT_STATUS_DRAFT() {
+        return self::SHIPMENT_STATUS_DRAFT;
+    }
+
+    public function getNONE() {
+        return self::NONE;
+    }
+    public function getSENDING_METHODS() {
+        return self::SENDING_METHODS;
+    }
     
     public function install() {
         //$this->log->write(print_r('model\extension\shipping\inpostoc3 install before db install', true));
@@ -16,11 +35,15 @@ class ModelExtensionShippingInPostOC3 extends Model {
                 PRIMARY KEY(`id`)
           ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
         ");
-
-        $this->db->query("       
-            INSERT IGNORE INTO `inpostoc3_services` (`id`,`service_identifier`) VALUES
-            ( 1 , 'inpost_locker_standard' );
-        ");
+        $sql="
+            INSERT IGNORE INTO `inpostoc3_sending_method` (`id`,`sending_method_identifier`) VALUES
+        ";
+        foreach(self::SENDING_METHODS as $sending_method) {
+            $sql .= "(". $sending_method['id'] .", '". $sending_method['sending_method_identifier']. "'),";
+        }
+        $sql = substr($sql, 0, -1);
+        $sql .= ";" ;
+        $this->db->query($sql);
 
         $this->db->query("
             CREATE TABLE IF NOT EXISTS `inpostoc3_services_routing` (

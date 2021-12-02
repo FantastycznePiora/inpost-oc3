@@ -85,7 +85,7 @@ $_['help_parcel_template_length_class']             = 'Length class for InPost p
 $_['help_sendfrom']                                 = 'Select ISO alpha 3 code for country, from which shipments are sent to receivers in this Geo Zone';
 
 // Button
-$_['button_shipping_print']                         = 'Get Label from InPost. Once done, shipment cannot be edited.';
+$_['button_shipping_print']                         = 'Get Label from InPost. Once done, shipment cannot be edited. If shipment in edit state, saves current shipment prior to getting a label.';
 $_['button_shipping_save']                          = 'Save draft. Shipment can be edited later.';
 
 // Error
@@ -94,3 +94,5 @@ $_['error_insufficient_shipment_data']              = 'Insufficient shipment dat
 $_['error_no_service']                              = 'No service id!';
 $_['error_no_sending_method']                       = 'No sending method id!';
 $_['error_no_sender']                               = 'No sender id!';
+$_['error_curl_not_installed']                      = 'cURL is not installed on this server!';
+$_['error_shipment_already_created]']               = 'Sorry, not saved! Shipment was already saved and sent via API by someone else!';
