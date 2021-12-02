@@ -392,6 +392,12 @@ class ModelExtensionShippingInPostOC3 extends Model {
         $query = $this->db->query ($sql);
         $result = array();
         foreach($query->rows as $row){
+            if ( !empty($row['template_id']) ) {
+                $filter['id'] = $row['template_id'];
+                $ptmplts = $this->getParcelTemplates($filter);
+                $pt = reset ($ptmplts); // get first one
+                $row['template_identifier'] = $pt['template_identifier'];
+            }
             $result[$row['id']]=$row;
         }
         return $result;
@@ -409,6 +415,12 @@ class ModelExtensionShippingInPostOC3 extends Model {
         $query = $this->db->query ($sql);
         $result = array();
         foreach($query->rows as $row){
+            if (!empty($row['sending_method']) ) {
+                $filter['id']=$row['sending_method'];
+                $smtds = $this->getSendingMethods($filter);
+                $sm = reset ($smtds); // one sending method
+                $row['sending_method_identifier'] = $sm['sending_method_identifier'];
+            }
             $result[]=$row;
         }
         return $result;
@@ -469,6 +481,8 @@ class ModelExtensionShippingInPostOC3 extends Model {
         //$this->log->write(__METHOD__ . ' $query: ' . print_r($query,true));
         $result = array();
         foreach($query->rows as $row){
+
+            $this->log->write(__METHOD__ . ' $row before: ' . print_r($row,true));
             
             $filter2['shipment_id'] = $row['id'];
             $row['parcels'] = $this->getParcels($filter2);
@@ -489,7 +503,7 @@ class ModelExtensionShippingInPostOC3 extends Model {
 
             $result[$row['id']]=$row;
             
-            //$this->log->write(__METHOD__ . ' $row: ' . print_r($row,true));
+            $this->log->write(__METHOD__ . ' $row after: ' . print_r($row,true));
 
         }
         return $result;

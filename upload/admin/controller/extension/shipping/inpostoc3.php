@@ -6,6 +6,8 @@ use GuzzleHttp\Exception\ClientException;
 
 class ControllerExtensionShippingInPostOC3 extends Controller {
     private $error = array();
+    const HTTP_CODE_OK = 200;
+    const HTTP_CODE_CREATED = 201;
   
     public function index() {
         $this->load->language('extension/shipping/inpostoc3');
@@ -529,6 +531,7 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
 
                 $filter['order_id'] = $data['order_id'];
                 $data['shipments'] = $this->model_extension_shipping_inpostoc3->getShipments($filter);
+                //$this->log->write(__METHOD__ .' $data[\'shipments\']: ' . print_r($data['shipments'],true));
 
                 if ( empty($data['shipments']) || !isset($data['shipments']) ) {
                     // means no draft stuff was even created, need to create & save one before serving the view
@@ -774,7 +777,7 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
 
         $this->load->language('extension/shipping/inpostoc3'); 
         $this->load->model('extension/shipping/inpostoc3');
-
+        // as per https://dokumentacja-inpost.atlassian.net/wiki/spaces/PL/pages/11731043/1.6.0+Walidacja+formularzy
         if ( empty($shipment['order_id']) ||
             empty($shipment['service_id']) || $shipment['service_id'] == $this->model_extension_shipping_inpostoc3->getNONE() ||
             empty($shipment['custom_attributes']['sending_method']) || $shipment['custom_attributes']['sending_method'] == $this->model_extension_shipping_inpostoc3->getNONE() ||
@@ -1167,9 +1170,9 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
                             $resp = $this->apiGetShipment($api_config, $shipment);
                             $this->handleShipmentPostGetResponse($shipment,$resp);
                         }
-                        if (!$shipment['error'] {
+                        if ( !$shipment['error'] ) {
                             //get label here
-                        })
+                        }
                         
                     }
                 }
@@ -1211,19 +1214,20 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
     protected function apiPostShipment($api_config,$shipment) {
         
         //$payload = $this->mapShipmentToJsonRequestBody($shipment);
-        // test env wickery due to limited points available in ai sandbox
-        /*
-        if ($api_config['use_sandbox_api'] {
+        // test env wickery due to limited points available in api sandbox
+        
+        if ($api_config['use_sandbox_api']) {
             $shipment['custom_attributes']['dropoff_point'] = "GDA008";
             $shipment['custom_attributes']['target_point'] = "ZGO171";
-        })
-        */
+        }
+        
         $req = array(
             'baseurl' => ($api_config['use_sandbox_api'] ? $api_config['sandbox']['api_endpoint'] : $api_config['production']['api_endpoint'] ) , //plus route
             'route' => "/v1/organizations/" .  ($api_config['use_sandbox_api'] ? $api_config['sandbox']['api_org_id'] : $api_config['production']['api_org_id'] ) . "/shipments",
             'method' => 'POST' ,
             'body' => $this->mapShipmentToJsonRequestBody($shipment),
-            'queryParams' => null
+            'queryParams' => null,
+            'expected_http_code' => self::HTTP_CODE_CREATED
         );        
         $this->log->write(__METHOD__.'  $req  : '.print_r($req,true));
 
@@ -1240,7 +1244,8 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
             'route' => "/v1/shipments/" .  $shipment['number'],
             'method' => 'GET' ,
             'body' => null,
-            'queryParams' => null
+            'queryParams' => null,
+            'expected_http_code' => self::HTTP_CODE_OK
         );
         //$this->log->write(__METHOD__.' the $req: '.print_r($req,true));
 
@@ -1264,7 +1269,8 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
             'route' => "/v1/organizations/" .  ($api_config['use_sandbox_api'] ? $api_config['sandbox']['api_org_id'] : $api_config['production']['api_org_id'] ) ,
             'method' => 'GET' ,
             'body' => null,
-            'queryParams' => null
+            'queryParams' => null,
+            'expected_http_code' => self::HTTP_CODE_OK
         );
         //$this->log->write(__METHOD__.' the $req: '.print_r($req,true));
 
@@ -1392,12 +1398,13 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
             return $len;
             }
         );
+        $resp['expected_http_code'] = $req['expected_http_code'];
         $resp['body'] = curl_exec($ch);
         $resp['body_json_decode'] = json_decode($resp['body'],true);
         $resp['info'] = curl_getinfo($ch);
         //$this->log->write(__METHOD__.' $resp: '.print_r($resp,true));
-        if ( $resp['info']['http_code'] != 200 ) {
-            $this->log->write(__METHOD__.' Not 200 (OK)! $resp: '.print_r($resp,true));
+        if ( $resp['info']['http_code'] != $req['expected_http_code'] ) {
+            $this->log->write(__METHOD__.' Error! Expected code: '. $req['expected_http_code'] .', received code: '.  $resp['info']['http_code'] .' $resp: '.print_r($resp,true));
             $this->error["warning"] = $resp['body'];
         }
         // TODO: write request and response to DB as log if respective setting in configuration enabled
@@ -1407,7 +1414,7 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
     }
     // helper - handle response for post/get shipment
     protected function handleShipmentPostGetResponse(&$shipment,$resp) {
-        if ($resp['info']['http_code'] == 200 ) {
+        if ($resp['info']['http_code'] == $resp['expected_http_code'] ) {
             $this->mapResponseToShipment($shipment,$resp);
             $this->model_extension_shipping_inpostoc3->saveShipment($shipment) ;
          } else {
@@ -1424,21 +1431,14 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
         $json = array();
         $this->load->model('extension/shipping/inpostoc3');
 
+        $this->fillInGapsInShipment($shipment);
         $this->log->write(__METHOD__.'  $shipment  : '.print_r($shipment,true));
-
+        
         $json['reference'] = $shipment['order_id'];
-        unset($filter);
-        $filter['id'] = $shipment['service_id'];
-        $services = $this->model_extension_shipping_inpostoc3->getServices( $filter );
-        $service = reset($services); //get only one
-        $json['service'] = $service['service_identifier'];
+        $json['service'] = $shipment['service_identifier'];
         $json['comments'] = 'Created by user id: '. $this->session->data['user_id'];
         if ( !empty($shipment['custom_attributes']) ) {
-            unset($filter);
-            $filter['id'] = $shipment['custom_attributes']['sending_method'];
-            $sm = $this->model_extension_shipping_inpostoc3->getSendingMethods( $filter );
-            $sending_method = reset($sm); //get only one
-            $json['custom_attributes']['sending_method'] = $sending_method['sending_method_identifier'];
+            $json['custom_attributes']['sending_method'] = $shipment['custom_attributes']['sending_method_identifier'];
             $json['custom_attributes']['target_point'] = $shipment['custom_attributes']['target_point'];
             if ( $shipment['custom_attributes']['sending_method'] ==  $this->model_extension_shipping_inpostoc3->getSENDING_METHODS()['parcel_locker']['id'] ) {
                 $json['custom_attributes']['dropoff_point'] = $shipment['custom_attributes']['dropoff_point'];
@@ -1447,51 +1447,59 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
         $index = 0;
         foreach ($shipment['parcels'] as $parcel) {
             $json['parcels'][$index]['id']          = $parcel['id'];
-            $filter['id'] = $parcel['template_id'];
-            $ts = $this->model_extension_shipping_inpostoc3->getParcelTemplates( $filter);
-            $t = reset ($ts ); //get only one - first one
-            $json['parcels'][$index]['template']    = $t['template_identifier'];
+            $json['parcels'][$index]['template']    = $parcel['template_identifier'];
             $index++;
         }
 
-        $json['sender']['name'] =                       $shipment['sender']['name'];
-        $json['sender']['company_name'] =               $shipment['sender']['company_name'];
-        $json['sender']['first_name'] =                 $shipment['sender']['first_name'];
-        $json['sender']['last_name'] =                  $shipment['sender']['last_name'];
-        $json['sender']['email'] =                      $shipment['sender']['email'];
-        $json['sender']['phone'] =                      $shipment['sender']['phone'];
-        if ( !empty($shipment['sender']['street']) || !empty($shipment['sender']['building_number']) ) {
-            $json['sender']['address']['street'] =          $shipment['sender']['street'];
-            $json['sender']['address']['building_number'] = $shipment['sender']['building_number'];
-        } 
-        if ( !empty($shipment['sender']['line1']) ) {
-            $json['sender']['address']['line1'] =           $shipment['sender']['line1'];
-            $json['sender']['address']['line2'] =           $shipment['sender']['line2'];
+        $peers = array("sender", "receiver");
+        foreach($peers as $peer) {
+            $json[$peer]['name'] =                       $shipment[$peer]['name'];
+            $json[$peer]['company_name'] =               $shipment[$peer]['company_name'];
+            $json[$peer]['first_name'] =                 $shipment[$peer]['first_name'];
+            $json[$peer]['last_name'] =                  $shipment[$peer]['last_name'];
+            $json[$peer]['email'] =                      $shipment[$peer]['email'];
+            $json[$peer]['phone'] =                      $shipment[$peer]['phone'];
+            // as per https://dokumentacja-inpost.atlassian.net/wiki/spaces/PL/pages/11731043/1.6.0+Walidacja+formularzy
+            if ( !empty($shipment[$peer]['street']) || !empty($shipment[$peer]['building_number']) ) {
+                $json[$peer]['address']['street'] =          $shipment[$peer]['street'];
+                $json[$peer]['address']['building_number'] = $shipment[$peer]['building_number'];
+            } 
+            if ( !empty($shipment[$peer]['line1']) ) {
+                $json[$peer]['address']['line1'] =           $shipment[$peer]['line1'];
+                $json[$peer]['address']['line2'] =           $shipment[$peer]['line2'];
+            }
+            $json[$peer]['address']['city'] =            $shipment[$peer]['city'];
+            $json[$peer]['address']['post_code'] =       $shipment[$peer]['post_code'];
+            $json[$peer]['address']['country_code'] =    $shipment[$peer]['country_iso_code_2'];
         }
-        $json['sender']['address']['city'] =            $shipment['sender']['city'];
-        $json['sender']['address']['post_code'] =       $shipment['sender']['post_code'];
-        $json['sender']['address']['country_code'] =    $shipment['sender']['country_iso_code_2'];
-
-        $json['receiver']['name'] =                       $shipment['receiver']['name'];
-        $json['receiver']['company_name'] =               $shipment['receiver']['company_name'];
-        $json['receiver']['first_name'] =                 $shipment['receiver']['first_name'];
-        $json['receiver']['last_name'] =                  $shipment['receiver']['last_name'];
-        $json['receiver']['email'] =                      $shipment['receiver']['email'];
-        $json['receiver']['phone'] =                      $shipment['receiver']['phone'];
-        if ( !empty($shipment['receiver']['street']) || !empty($shipment['receiver']['building_number']) ) {
-            $json['receiver']['address']['street'] =          $shipment['receiver']['street'];
-            $json['receiver']['address']['building_number'] = $shipment['receiver']['building_number'];
-        } 
-        if (!empty($shipment['receiver']['line1']) ){
-            $json['receiver']['address']['line1'] =           $shipment['receiver']['line1'];
-            $json['receiver']['address']['line2'] =           $shipment['receiver']['line2'];
-        }
-        $json['receiver']['address']['city'] =            $shipment['receiver']['city'];
-        $json['receiver']['address']['post_code'] =       $shipment['receiver']['post_code'];
-        $json['receiver']['address']['country_code'] =    $shipment['receiver']['country_iso_code_2'];
-
 
         return json_encode($json, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_NUMERIC_CHECK);
+    }
+
+    // helper: grab string identifiers if missing - it shouldn't, but just in case something didn't arrive within structure
+    protected function fillInGapsInShipment(&$shipment) {
+        if ( empty($shipment['service_identifier']) ){
+            unset($filter);
+            $filter['id'] = $shipment['service_id'];
+            $services = $this->model_extension_shipping_inpostoc3->getServices( $filter );
+            $service = reset($services); //get only one
+            $shipment['service_identifier'] = $service['service_identifier'];
+        }
+        if ( !empty($shipment['custom_attributes']) && empty($shipment['custom_attributes']['sending_method_identifier'] )   ) {
+            unset($filter);
+            $filter['id'] = $shipment['custom_attributes']['sending_method'];
+            $sm = $this->model_extension_shipping_inpostoc3->getSendingMethods( $filter );
+            $sending_method = reset($sm); //get only one
+            $shipment['custom_attributes']['sending_method_identifier'] = $sending_method['sending_method_identifier'];
+        }
+        foreach ($shipment['parcels'] as $parcel) {
+            if ( empty($parcel['template_identifier']) ) {
+                $filter['id'] = $parcel['template_id'];
+                $ts = $this->model_extension_shipping_inpostoc3->getParcelTemplates( $filter);
+                $t = reset ($ts ); //get only one - first one
+                $parcel['template_identifier'] = $t['template_identifier']; 
+            }
+        }
     }
 
     // helper: deserialize synchronous responses to have data to update shipment entity

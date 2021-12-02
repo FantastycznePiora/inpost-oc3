@@ -67,7 +67,11 @@
                       {% set dropoff_enable = false %}
                       <tr>
                         <td>
-                        <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
+                        <div class="form-group row form-inline 
+                        {% if shipment.can_edit.sending_method_details %}
+                        required
+                        {% endif %}
+                        " style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                           <label class="col-md-2 control-label" for="input-inpostoc3-service-{{order_id}}-{{ shipment.id }}">{{ text_service }}</label>
                           <div class="col-md-10">
                             {% if shipment.can_edit.sending_method_details %}
@@ -87,6 +91,12 @@
                             </select>
                             {% else %}
                             {{ attribute(_context,'text_' ~shipment.service_identifier~'_name')  }}
+                            <input type="hidden" form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}"
+                              name="input-inpostoc3[{{order_id}}][shipments][{{ shipment.id }}][service_id]" id="input-inpostoc3-service-{{order_id}}-{{ shipment.id }}"
+                              value="{{ shipment.service_id }}" >
+                            <input type="hidden" form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}"
+                              name="input-inpostoc3[{{order_id}}][shipments][{{ shipment.id }}][service_identifier]" id="input-inpostoc3-service_identifier-{{order_id}}-{{ shipment.id }}"
+                              value="{{ shipment.service_identifier }}" >
                             {% endif %}
                             <input type="hidden" form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}"
                               name="input-inpostoc3[{{order_id}}][shipments][{{ shipment.id }}][id]" id="input-inpostoc3-shipment-id-{{order_id}}-{{ shipment.id }}"
@@ -99,7 +109,11 @@
                               value="{{ order_id }}" >
                           </div>
                         </div>
-                        <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
+                        <div class="form-group row form-inline 
+                        {% if shipment.can_edit.sending_method_details %}
+                        required
+                        {% endif %}
+                        " style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                           <label class="col-md-2 control-label" for="input-inpostoc3-sending-method-{{order_id}}-{{ shipment.id }}">{{ text_sending_method }}</label>
                           <div class="col-md-10">
                             {% if shipment.can_edit.sending_method_details %}
@@ -127,7 +141,15 @@
                               <!-- after initial fill do the java script stuff here to fill sending methods according to selected service -->              
                             </select>
                             {% else %}
-                            {{ attribute(_context,'text_' ~shipment.custom_attributes.sending_method~'_name')  }}
+                            {% if shipment.custom_attributes.sending_method %}
+                            {{ attribute(_context,'text_sending_method_' ~shipment.custom_attributes.sending_method_identifier) }}
+                            <input type="hidden" form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}" 
+                              name="input-inpostoc3[{{order_id}}][shipments][{{ shipment.id }}][custom_attributes][sending_method]" id="input-inpostoc3-sending-method-{{order_id}}-{{ shipment.id }}" 
+                              value="{{ shipment.custom_attributes.sending_method }}" >
+                            <input type="hidden" form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}" 
+                              name="input-inpostoc3[{{order_id}}][shipments][{{ shipment.id }}][custom_attributes][sending_method_identifier]" id="input-inpostoc3-sending-method_identifier-{{order_id}}-{{ shipment.id }}" 
+                              value="{{ shipment.custom_attributes.sending_method_identifier }}" >
+                            {% endif %}
                             {% endif %}
                             <input type="hidden" form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}" 
                             name="input-inpostoc3[{{order_id}}][shipments][{{ shipment.id }}][custom_attributes][shipment_id]" id="input-inpostoc3-shipment-cattr-shipment_id-{{order_id}}-{{ shipment.id }}" 
@@ -136,7 +158,7 @@
                             <input type="hidden" form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}" 
                             name="input-inpostoc3[{{order_id}}][shipments][{{ shipment.id }}][custom_attributes][id]" id="input-inpostoc3-shipment-cattr-{{ shipment.custom_attributes.id }}-id-{{order_id}}-{{ shipment.id }}" 
                               value="{{ shipment.custom_attributes.id }}" >
-                              {% endif %}
+                            {% endif %}
                           </div>
                         </div>
                         </td>
@@ -167,7 +189,10 @@
                               {% endif %}
                               class="btn btn-primary form-control" style="width: 100%;" />
                               {% else %}
-                              <span name="input-inpostoc3[{{order_id}}][shipments][{{ shipment.id }}][custom_attributes][dropoff_point]" class="form-control">{{ shipment.custom_attributes.dropoff_point }}</span>
+                                {{ shipment.custom_attributes.dropoff_point }}
+                              <input type="hidden" form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}"
+                              name="input-inpostoc3[{{order_id}}][shipments][{{ shipment.id }}][custom_attributes][dropoff_point]" id="input-inpostoc3-sender-selected-point-{{order_id}}-{{ shipment.id }}"
+                              value="{{ shipment.custom_attributes.dropoff_point }}" >
                               {% endif %}                              
                             </div>
                           </div>
@@ -195,7 +220,11 @@
 						              {% endif %}
 
 
-                          <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
+                          <div class="form-group row form-inline 
+                          {% if shipment.can_edit.sending_method_details %}
+                          required
+                          {% endif %}
+                          " style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                             <label class="col-md-3 control-label" for="input-inpostoc3-sender-name-{{order_id}}-{{ shipment.id }}">{{ text_name }}</label>
                             <div class="col-md-9">
                               {% if shipment.can_edit.sending_method_details %}
@@ -203,7 +232,10 @@
                               value="{{ shipment.sender_id ? shipment.sender.name : sender.name }}"
                               placeholder="{{ text_name }}"  class="form-control" style="width: 100%;" />
                               {% else %}
-                              <span name="input-inpostoc3-{{order_id}}-{{ shipment.id }}-sender-name" class="form-control">{{ shipment.sender.name }}</span>
+                              {{ shipment.sender.name }}
+                              <input type="hidden" form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}"
+                              name="input-inpostoc3[{{order_id}}][shipments][{{ shipment.id }}][sender][name]" id="input-inpostoc3-sender-name-{{order_id}}-{{ shipment.id }}"
+                              value="{{ shipment.sender.name }}" >
                               {% endif %}
                               {% if shipment.sender_id %}
                               <input type="hidden" form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}"
@@ -416,12 +448,19 @@
                               {% endif %}
                               class="btn btn-primary form-control" style="width: 100%;" />
                               {% else %}
-                              <span name="input-inpostoc3[{{order_id}}][shipments][{{ shipment.id }}][custom_attributes][target_point]" class="form-control">{{ shipment.custom_attributes.target_point }}</span>
+                                {{ shipment.custom_attributes.target_point }}
+                              <input type="hidden" form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}"
+                              name="input-inpostoc3[{{order_id}}][shipments][{{ shipment.id }}][custom_attributes][target_point]" id="input-inpostoc3-receiver-selected-point-{{order_id}}-{{ shipment.id }}"
+                              value="{{ shipment.custom_attributes.target_point }}" >
                               {% endif %}                              
                             </div>
                           </div>
 
-                          <div class="form-group row form-inline required" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
+                          <div class="form-group row form-inline 
+                          {% if shipment.can_edit.sending_method_details %}
+                          required
+                          {% endif %}
+                          " style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">
                             <label class="col-md-3 control-label" for="input-inpostoc3-receiver-name-{{order_id}}-{{ shipment.id }}">{{ text_name }}</label>
                             <div class="col-md-9">
                               {% if shipment.can_edit.sending_method_details %}
@@ -429,7 +468,10 @@
                               value="{{ shipment.receiver_id ? shipment.receiver.name : receiver.name }}" 
                               placeholder="{{ text_name }}"  class="form-control" style="width: 100%;" />
                               {% else %}
-                              <span name="input-inpostoc3[{{order_id}}][shipments][{{ shipment.id }}][receiver][name]" class="form-control">{{ shipment.receiver.name }}</span>
+                              {{ shipment.receiver.name }}
+                              <input type="hidden" form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}"
+                              name="input-inpostoc3[{{order_id}}][shipments][{{ shipment.id }}][receiver][name]" id="input-inpostoc3-receiver-name-{{order_id}}-{{ shipment.id }}"
+                              value="{{ shipment.receiver.name }}" >
                               {% endif %}
                               {% if shipment.receiver_id %} 
                               <input type="hidden" form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}"
@@ -663,12 +705,13 @@
                               {% else %}
                               {% for parcel_template in parcel_templates %}
                               {% if parcel.template_id is same as (parcel_template.id) %}
-                              <span class="form-control"
-                                name="input-inpostoc3[{{order_id}}][shipments][{{ shipment.id }}][parcels][{{ parcel.id }}][template_id]" 
-                                id="input-inpostoc3-parcel-{{ parcel.id }}-template-id-{{order_id}}-{{ shipment.id }}"
-                              >
                                 {{ parcel_template.template_identifier }} - {{ parcel_template.max_height}}mm x {{ parcel_template.max_width}}mm x {{ parcel_template.max_length}}mm x {{ parcel_template.max_weight}}kg
-                              </span>
+                              <input type="hidden" form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}"
+                              name="input-inpostoc3[{{order_id}}][shipments][{{ shipment.id }}][parcels][{{ parcel.id }}][template_id]" id="input-inpostoc3-parcel-{{ parcel.id }}-template-id-{{order_id}}-{{ shipment.id }}"
+                              value="{{ parcel.template_id }}" >
+                              <input type="hidden" form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}"
+                              name="input-inpostoc3[{{order_id}}][shipments][{{ shipment.id }}][parcels][{{ parcel.id }}][template_identifier]" id="input-inpostoc3-parcel-{{ parcel.id }}-template-identifier-{{order_id}}-{{ shipment.id }}"
+                              value="{{ parcel.template_identifier }}" >
                               {% endif %}
                               {% endfor %}
                               {% endif %}

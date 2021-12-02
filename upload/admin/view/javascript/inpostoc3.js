@@ -51,8 +51,12 @@ $(document).ready(function() {
     // console.log("input-inpostoc3-receiver-selected-point-" + items[3] + '-' + items[4]);
     if ( $(this).val() == 1 ) {
       $("#input-inpostoc3-receiver-selected-point-" + items[3] + '-' + items[4] ).prop('disabled', false);
+      $("#input-inpostoc3-receiver-selected-point-" + items[3] + '-' + items[4] ).prop('required', true);
+      $('#'+items[3] + '-' + items[4] +'-target-point').addClass('required');
     } else {
       $("#input-inpostoc3-receiver-selected-point-" + items[3] + '-' + items[4] ).prop('disabled', true);
+      $("#input-inpostoc3-receiver-selected-point-" + items[3] + '-' + items[4] ).prop('required', false);
+      $('#'+items[3] + '-' + items[4] +'-target-point').removeClass('required');
     }
     
     //console.log('index.php?route=extension/shipping/inpostoc3/sendingmethodsforservice&service_id=' + serviceId + '&user_token=' + getUserToken());
@@ -127,8 +131,12 @@ $(document).ready(function() {
     var items = $(this).attr('id').split('-');
     if ( $(this).val() == 1 ) {
       $("#input-inpostoc3-sender-selected-point-" + items[4] + '-' + items[5] ).prop('disabled', false);
+      $("#input-inpostoc3-sender-selected-point-" + items[3] + '-' + items[4] ).prop('required', true);
+      $('#'+items[3] + '-' + items[4] +'-dropoff-point').addClass('required');
     } else {
       $("#input-inpostoc3-sender-selected-point-" + items[4] + '-' + items[5] ).prop('disabled', true);
+      $("#input-inpostoc3-sender-selected-point-" + items[3] + '-' + items[4] ).prop('required', false);
+      $('#'+items[3] + '-' + items[4] +'-dropoff-point').removeClass('required');
     }
   });
 
