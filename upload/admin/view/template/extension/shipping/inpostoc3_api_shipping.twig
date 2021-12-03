@@ -13,11 +13,17 @@
 <body>
   <div class="container">
     {{ error_warning }}
-    Teścik <br />
     <div>
-      {{ api_resp }}
-      {{ entry_method }}
-      {{ posted }}
+      {% if labels %}
+      {% for key, label in labels %}
+        {{ label }}
+      {% endfor %}
+      {% else %}
+      <div class="alert alert-danger alert-dismissible"><i class="fa fa-exclamation-circle"></i> {{ error_warning }}
+        Sorry, it seems the shipment label(s) is/are not ready yet. Please try again later.
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+      </div>
+      {% endif %}
     </div>
   </div>
 </body>

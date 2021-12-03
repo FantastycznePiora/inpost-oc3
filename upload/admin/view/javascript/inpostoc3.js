@@ -216,8 +216,10 @@ function easyPackWidget(data) {
   
   data.mapInit.mapType = geoWidgetDefaultMapType;
   data.mapInit.searchType = geoWidgetDefaultMapType;
-  data.countryIsoCode2 = $('#input-inpostoc3-' + data.who + '-addr-country-code-' + data.orderId + '-' + data.shipmentId).text().toLowerCase();
+  data.countryIsoCode2 = $('#input-inpostoc3-' + data.who + '-addr-country_iso_code_2-' + data.orderId + '-' + data.shipmentId).val().toLowerCase();
   if ( !geoWidgetDefaultLocale.includes(data.countryIsoCode2) ) {
+    console.log('element id: #input-inpostoc3-' + data.who + '-addr-country_iso_code_2-' + data.orderId + '-' + data.shipmentId);
+    console.log('element val: ' + $('#input-inpostoc3-' + data.who + '-addr-country_iso_code_2-' + data.orderId + '-' + data.shipmentId).val());
     throw new GeoWidgetError('Incorrect defaultLocale for GeoWidget = "' + data.countryIsoCode2 + '".Allowed defaultLocale values = [' + geoWidgetDefaultLocale + ']');
   }
   data.mapInit.defaultLocale = data.countryIsoCode2;

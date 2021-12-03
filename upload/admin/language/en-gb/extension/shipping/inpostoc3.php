@@ -55,6 +55,7 @@ $_['text_addr_country_code']                        = 'Country';
 $_['text_addr_new']                                 = '-- Enter new sender details';
 $_['text_click_to_select']                          = 'Click to select...';
 $_['text_order']                                    = 'Order';
+$_['text_shipment_saved']                           = 'Shipment saved!';
 
 // Entry
 $_['entry_status']                                  = 'Status';

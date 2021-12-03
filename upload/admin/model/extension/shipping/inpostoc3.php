@@ -482,7 +482,7 @@ class ModelExtensionShippingInPostOC3 extends Model {
         $result = array();
         foreach($query->rows as $row){
 
-            $this->log->write(__METHOD__ . ' $row before: ' . print_r($row,true));
+            //$this->log->write(__METHOD__ . ' $row before: ' . print_r($row,true));
             
             $filter2['shipment_id'] = $row['id'];
             $row['parcels'] = $this->getParcels($filter2);
@@ -503,7 +503,7 @@ class ModelExtensionShippingInPostOC3 extends Model {
 
             $result[$row['id']]=$row;
             
-            $this->log->write(__METHOD__ . ' $row after: ' . print_r($row,true));
+            //$this->log->write(__METHOD__ . ' $row after: ' . print_r($row,true));
 
         }
         return $result;
@@ -616,7 +616,7 @@ class ModelExtensionShippingInPostOC3 extends Model {
             'is_non_standard' => null
         );
 
-        $sql = $sql = $this->sqlBuildSimplePartsForInsertOnDupKey(array_intersect_key($parcel, $allowed_keys),$target);
+        $sql = $this->sqlBuildSimplePartsForInsertOnDupKey(array_intersect_key($parcel, $allowed_keys),$target);
 
         $this->db->query($sql);
         $parcel_id = $this->db->getLastId();
