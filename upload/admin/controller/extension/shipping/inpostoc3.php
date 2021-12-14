@@ -1196,6 +1196,9 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
                         }
                         $data['orders'][$shipment['order_id']]['order_id'] = $shipment['order_id'];
                         $data['orders'][$shipment['order_id']]['labels'][$shipment['number']]['get_label_url'] = $this->url->link('extension/shipping/inpostoc3/ship2inpostapi', 'user_token=' . $this->session->data['user_token'] . '&inpostoc3_shipment_id=' .$shipment['id'] . '&geo_zone_id=' .$order['geo_zone_id'], true);
+                    }
+                }
+            }    
             //$this->log->write(__METHOD__ .' there\'s a POST received!');
         }
         if ( isset($this->request->get['inpostoc3_shipment_id']) && isset($this->request->get['geo_zone_id']) ) {
