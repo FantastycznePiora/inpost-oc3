@@ -104,7 +104,11 @@
                   <label class="col-sm-2 control-label" for="input-sendfrom-{{ geo_zone.geo_zone_id }}-{{ inpost_service.id}}"><span data-toggle="tooltip" title="{{ help_sendfrom }}">{{ entry_sendfrom }}</span></label>
                   <div class="col-sm-10">
                     <select name="shipping_inpostoc3_{{ geo_zone.geo_zone_id }}_{{inpost_service.id}}_sendfrom" id="input-sendfrom-{{ geo_zone.geo_zone_id }}-{{inpost_service.id}}" class="form-control">
-                      <option value="0">{{ text_none }}</option>
+                      <option value="0"
+                      {% if not shipping_inpostoc3_geo_zone_sendfrom[geo_zone.geo_zone_id][inpost_service.id] or shipping_inpostoc3_geo_zone_sendfrom[geo_zone.geo_zone_id][inpost_service.id] == 0 %}
+                      selected="selected"
+                      {% endif %}
+                      >{{ text_none }}</option>
                       {% for route in inpost_service.allowed_routes %}
                       <option value="{{ route.id }}" 
                         {% if shipping_inpostoc3_geo_zone_sendfrom[geo_zone.geo_zone_id][inpost_service.id] is same as (route.id) %}

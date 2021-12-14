@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html dir="{{ direction }}" lang="{{ lang }}">
+<head>
+  <meta charset="UTF-8" />
+  <title>{{ title }}</title>
+  <base href="{{ base }}" />
+  <link href="view/javascript/bootstrap/css/bootstrap.css" rel="stylesheet" media="all" />
+  <script type="text/javascript" src="view/javascript/jquery/jquery-2.1.1.min.js"></script>
+  <script type="text/javascript" src="view/javascript/bootstrap/js/bootstrap.min.js"></script>
+  <link href="view/javascript/font-awesome/css/font-awesome.min.css" type="text/css" rel="stylesheet" />
+  <link type="text/css" href="view/stylesheet/stylesheet.css" rel="stylesheet" media="all" />
+</head>
+<body>
+  <div class="container">
+    {{ error_warning }}
+    <div>
+      {% if orders %}
+      {% for order in orders %}
+        <div>
+          Order#{{ order.order_id }}
+          <ol>
+          {% for key, label in order.labels %}
+          <li><a href="{{ label.get_label_url }}" target="_blank">Get label for InPost shipment id {{ key }}</a></li>          
+          {% endfor %}
+          </ol>
+        </div>
+      {% endfor %}
+      {% else %}
+      <div class="alert alert-danger alert-dismissible"><i class="fa fa-exclamation-circle"></i> {{ error_warning }}
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+      </div>
+      {% endif %}
+      {% if get_label %}
+      {{ get_label }}
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>

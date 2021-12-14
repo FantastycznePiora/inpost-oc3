@@ -25,9 +25,11 @@ $_['text_template_description_size_medium']         = 'Parcel template size: med
 $_['text_template_description_size_large']          = 'Parcel template size: large'; // Gabaryt C  
 $_['text_selected_target_point']                    = 'Selected target point';
 $_['text_selected_sending_method']                  = 'Selected sending method';
-$_['text_selected_sending_point']                   = 'Selected sending point';
+$_['text_selected_sending_point']                   = 'Selected dropoff point';
 $_['text_selected_sending_address']                 = 'Selected sending address';
+$_['text_service']                                  = 'Service';
 $_['text_service_identifier']                       = 'Service identifier';
+$_['text_sending_method']                           = 'Sending method'; // 'Sposób nadania'
 $_['text_sending_method_parcel_locker']             = 'I will post a package at parcel locker'; // 'Nadam przesyłkę w Paczkomacie'
 $_['text_shipments']                                = 'Shipments';
 $_['text_send_from']                                = 'Send from'; // 'Nadanie z'
@@ -37,6 +39,23 @@ $_['text_shipment_number']                          = 'Shipment number';
 $_['text_shipment_tracking_number']                 = 'Shipment tracking number';
 $_['text_parcel_number']                            = 'Parcel number';
 $_['text_parcel_tracking_number']                   = 'Parcel tracking number';
+$_['text_name']                                     = 'Name';
+$_['text_company_name']                             = 'Company name';
+$_['text_first_name']                               = 'First name';
+$_['text_last_name']                                = 'Last name';
+$_['text_email']                                    = 'Email';
+$_['text_phone']                                    = 'Phone';
+$_['text_addr_street']                              = 'Street';
+$_['text_addr_building_number']                     = 'Building number';
+$_['text_addr_line_1']                              = 'Address line 1';
+$_['text_addr_line_2']                              = 'Address line 2';
+$_['text_addr_city']                                = 'City';
+$_['text_addr_post_code']                           = 'Post code';
+$_['text_addr_country_code']                        = 'Country';
+$_['text_addr_new']                                 = '-- Enter new sender details';
+$_['text_click_to_select']                          = 'Click to select...';
+$_['text_order']                                    = 'Order';
+$_['text_shipment_saved']                           = 'Shipment saved!';
 
 // Entry
 $_['entry_status']                                  = 'Status';
@@ -55,6 +74,8 @@ $_['entry_api_endpoint']                            = 'API address';
 $_['entry_api_token']                               = 'API Token';
 $_['entry_api_org_id']                              = 'API organization id';
 $_['entry_sending_method_parcel_locker']            = 'Post at parcel locker';  // 'Nadanie w Paczkomacie'
+$_['entry_sendfrom']                                = 'Sending from country';
+$_['entry_name']                                    = '* Enter \'Name\' in the form';
 
 // Help
 $_['help_rate']                                     = 'Example: small:10.00,medium:12.00 Parcel template size:Cost,Parcel template size:Cost, etc...';
@@ -65,7 +86,14 @@ $_['help_parcel_template_length_class']             = 'Length class for InPost p
 $_['help_sendfrom']                                 = 'Select ISO alpha 3 code for country, from which shipments are sent to receivers in this Geo Zone';
 
 // Button
-$_['button_shipping_print']                          = 'Get Label from InPost. Once done, Shipment cannot be edited.';
+$_['button_shipping_print']                         = 'Get Label from InPost. Once done, shipment cannot be edited. If shipment in edit state, saves current shipment prior to getting a label.';
+$_['button_shipping_save']                          = 'Save draft. Shipment can be edited later.';
 
 // Error
-$_['error_permission'] = 'Warning: You do not have permission to modify InPosst OC3 shipping!';
+$_['error_permission']                              = 'Warning: You do not have permission to modify InPosst OC3 shipping!';
+$_['error_insufficient_shipment_data']              = 'Insufficient shipment data!';
+$_['error_no_service']                              = 'No service id!';
+$_['error_no_sending_method']                       = 'No sending method id!';
+$_['error_no_sender']                               = 'No sender id!';
+$_['error_curl_not_installed']                      = 'cURL is not installed on this server!';
+$_['error_shipment_already_created]']               = 'Sorry, not saved! Shipment was already saved and sent via API by someone else!';

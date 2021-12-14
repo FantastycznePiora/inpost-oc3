@@ -8,7 +8,7 @@ const geoWidgetStyleSrc = '<link rel=\"stylesheet\" href=\"https://geowidget.eas
 $(document).ready(function() {  
 
   $(geoWidgetScriptSrc).appendTo('head');
-$(geoWidgetStyleSrc).insertAfter('#' + geoWidgetSrcId);
+  $(geoWidgetStyleSrc).insertAfter('#' + geoWidgetSrcId);
 
 const ipoc3 = new InPostOC3('inpostoc3-geowidget');
 try {
