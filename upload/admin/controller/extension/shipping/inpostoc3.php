@@ -5,10 +5,29 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
     const HTTP_CODE_OK = 200;
     const HTTP_CODE_CREATED = 201;
     const STATUSES_WO_LABEL = array(
-        "draft",
-        "created",
-        "offers_prepared",
-        "offer_selected"
+        "pl" => array (
+            "draft",
+            "created",
+            "offers_prepared",
+            "offer_selected"
+        )
+        
+    );
+    const STATUSES_LABEL_AVAILABLE = array(
+        "pl" => array(
+            "confirmed"
+        )
+    );
+    const STATUSES_DELIVERED = array(
+        "pl" => array (
+            "delivered"
+        )
+    );
+    const TRACKING_URL = array(
+        "pl" => array(
+            "base_url"=>"https://inpost.pl/sledzenie-przesylek", //todo: move to extension settings
+            "query_param" => "?number="
+        )
     );
   
     public function index() {
@@ -520,13 +539,17 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
                         $this->handleShipmentPostGetResponse($o_shipment,$resp);
                     }
 
-                    if ( empty($o_shipment["number"]) || 
-                        ( !empty($o_shipment["number"]) && in_array($o_shipment['status'],self::STATUSES_WO_LABEL) ) 
-                    ) {
-                        $data['shipments'][$o_shipment['id']]['label_via_api_ready'] = false;
-                    } else {
-                        $data['shipments'][$o_shipment['id']]['label_via_api_ready'] = true;
+                    $data['shipments'][$o_shipment['id']]['label_via_api_ready'] = false;
+                    $data['shipments'][$o_shipment['id']]['tracking_url'] = null;
+                    // todo - select const subarray based on sendfrom from settings
+                    if  ( !empty($o_shipment["number"]) ) {
+                        if ( in_array($o_shipment['status'],self::STATUSES_LABEL_AVAILABLE['pl']) ) {
+                            $data['shipments'][$o_shipment['id']]['label_via_api_ready'] = true;
+                        } else if  ( !in_array($o_shipment['status'],self::STATUSES_WO_LABEL['pl']) && !empty($o_shipment["tracking_number"]) ) {
+                            $data['shipments'][$o_shipment['id']]['tracking_url'] = self::TRACKING_URL['pl']['base_url'] . self::TRACKING_URL['pl']['query_param'] . $o_shipment["tracking_number"];
+                        }    
                     }
+
                 }
                 //$this->log->write(__METHOD__ .' $data[\'shipments\']: ' . print_r($data['shipments'],true));
                 $data['senders'] = $this->model_extension_shipping_inpostoc3->getUniqueSenders();

@@ -871,30 +871,34 @@
                               name="input-inpostoc3[{{order_id}}][shipments][{{ shipment.id }}][status]" 
                               id="input-inpostoc3-shipment-status-{{order_id}}-{{ shipment.id }}" 
                               value="{{ shipment.status ?: null }}" >
-                    {% if shipment.status is same as('draft') %}
-                    <button type="submit" form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}" data-toggle="tooltip" title="{{ button_shipping_save }}" class="btn btn-primary" formaction="{{ attribute(_context,'action_save_' ~shipment.id ) }}" data-original-title="Save"><i class="fa fa-save"></i></button> 
-                    {% endif %}
-                    {% if shipment.label_via_api_ready == true %}
-                    <a href="{{ attribute(_context,'action_dispatch_' ~shipment.id ) }}"
-                    target="_blank"
-                    data-toggle="tooltip" title="{{ button_shipping_print }}"
-                    class="btn btn-primary" 
-                    data-original-title="Print"
-                    id="print-link-{{ order_id }}-{{ shipment.id }}" >
-                    <i class="fa fa-truck"></i>
-                    </a>
-                    {% else %}
-                    <button type="submit" 
-                    form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}" 
-                    data-toggle="tooltip" title="{{ button_shipping_print }}" 
-                    class="btn btn-primary" 
-                    formaction="{{ attribute(_context,'action_dispatch_' ~shipment.id ) }}" 
-                    formtarget="_blank"
-                    data-original-title="Print"
-                    id="print-button-{{ order_id }}-{{ shipment.id }}">
+                    {% if not shipment.tracking_url %}
+                      {% if shipment.status is same as('draft') %}
+                      <button type="submit" form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}" data-toggle="tooltip" title="{{ button_shipping_save }}" class="btn btn-primary" formaction="{{ attribute(_context,'action_save_' ~shipment.id ) }}" data-original-title="Save"><i class="fa fa-save"></i></button> 
+                      {% endif %}
+                      {% if shipment.label_via_api_ready == true %}
+                      <a href="{{ attribute(_context,'action_dispatch_' ~shipment.id ) }}"
+                      target="_blank"
+                      data-toggle="tooltip" title="{{ button_shipping_print }}"
+                      class="btn btn-primary" 
+                      data-original-title="Print"
+                      id="print-link-{{ order_id }}-{{ shipment.id }}" >
                       <i class="fa fa-truck"></i>
-                    </button>
-                    {% endif %}
+                      </a>
+                      {% else %}
+                      <button type="submit" 
+                      form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}" 
+                      data-toggle="tooltip" title="{{ button_shipping_print }}" 
+                      class="btn btn-primary" 
+                      formaction="{{ attribute(_context,'action_dispatch_' ~shipment.id ) }}" 
+                      formtarget="_blank"
+                      data-original-title="Print"
+                      id="print-button-{{ order_id }}-{{ shipment.id }}">
+                        <i class="fa fa-truck"></i>
+                      </button>
+                      {% endif %}
+                    {% else %}
+                    <a href="{{shipment.tracking_url}}" target="_blank">{{shipment.tracking_url}}</a>
+                    {% endif %} 
                     <form method="post" enctype="multipart/form-data" id="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}" class="col-md-12">
                     </form>
                   </div>
