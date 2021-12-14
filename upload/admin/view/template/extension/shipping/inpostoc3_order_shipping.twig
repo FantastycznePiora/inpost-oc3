@@ -468,6 +468,9 @@
                               <input type="hidden" form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}"
                               name="input-inpostoc3[{{order_id}}][shipments][{{ shipment.id }}][sender][country_iso_code_2]" id="input-inpostoc3-sender-addr-country_iso_code_2-{{order_id}}-{{ shipment.id }}"
                               value="{{ shipment.sender.country_iso_code_2 }}" >
+                              <input type="hidden" form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}"
+                              name="input-inpostoc3[{{order_id}}][shipments][{{ shipment.id }}][sender][country_iso_code_3]" id="input-inpostoc3-sender-addr-country_iso_code_3-{{order_id}}-{{ shipment.id }}"
+                              value="{{ shipment.sender.country_iso_code_3 }}" >
                             </div>
                           </div>
                         </td>
@@ -756,7 +759,10 @@
                               {{ shipment.receiver.country_iso_code_2 }}
                               <input type="hidden" form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}"
                               name="input-inpostoc3[{{order_id}}][shipments][{{ shipment.id }}][receiver][country_iso_code_2]" id="input-inpostoc3-receiver-addr-country_iso_code_2-{{order_id}}-{{ shipment.id }}"
-                              value="{{ shipment.receiver.country_iso_code_2 }}" >                             
+                              value="{{ shipment.receiver.country_iso_code_2 }}" >  
+                              <input type="hidden" form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}"
+                              name="input-inpostoc3[{{order_id}}][shipments][{{ shipment.id }}][receiver][country_iso_code_3]" id="input-inpostoc3-receiver-addr-country_iso_code_3-{{order_id}}-{{ shipment.id }}"
+                              value="{{ shipment.receiver.country_iso_code_3 }}" >                           
                             </div>
                           </div>
                         </td>
@@ -861,9 +867,23 @@
               <tr>
                 <td colspan="2" class="text-center">
                   <div class="pull-center">
+                    <input type="hidden" form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}"
+                              name="input-inpostoc3[{{order_id}}][shipments][{{ shipment.id }}][status]" 
+                              id="input-inpostoc3-shipment-status-{{order_id}}-{{ shipment.id }}" 
+                              value="{{ shipment.status ?: null }}" >
                     {% if shipment.status is same as('draft') %}
                     <button type="submit" form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}" data-toggle="tooltip" title="{{ button_shipping_save }}" class="btn btn-primary" formaction="{{ attribute(_context,'action_save_' ~shipment.id ) }}" data-original-title="Save"><i class="fa fa-save"></i></button> 
                     {% endif %}
+                    {% if shipment.label_via_api_ready == true %}
+                    <a href="{{ attribute(_context,'action_dispatch_' ~shipment.id ) }}"
+                    target="_blank"
+                    data-toggle="tooltip" title="{{ button_shipping_print }}"
+                    class="btn btn-primary" 
+                    data-original-title="Print"
+                    id="print-link-{{ order_id }}-{{ shipment.id }}" >
+                    <i class="fa fa-truck"></i>
+                    </a>
+                    {% else %}
                     <button type="submit" 
                     form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}" 
                     data-toggle="tooltip" title="{{ button_shipping_print }}" 
@@ -874,6 +894,7 @@
                     id="print-button-{{ order_id }}-{{ shipment.id }}">
                       <i class="fa fa-truck"></i>
                     </button>
+                    {% endif %}
                     <form method="post" enctype="multipart/form-data" id="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}" class="col-md-12">
                     </form>
                   </div>

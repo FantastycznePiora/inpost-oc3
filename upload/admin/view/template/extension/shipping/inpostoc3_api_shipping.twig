@@ -14,15 +14,24 @@
   <div class="container">
     {{ error_warning }}
     <div>
-      {% if labels %}
-      {% for key, label in labels %}
-        {{ label }}
+      {% if orders %}
+      {% for order in orders %}
+        <div>
+          Order#{{ order.order_id }}
+          <ol>
+          {% for key, label in order.labels %}
+          <li><a href="{{ label.get_label_url }}" target="_blank">Get label for InPost shipment id {{ key }}</a></li>          
+          {% endfor %}
+          </ol>
+        </div>
       {% endfor %}
       {% else %}
       <div class="alert alert-danger alert-dismissible"><i class="fa fa-exclamation-circle"></i> {{ error_warning }}
-        Sorry, it seems the shipment label(s) is/are not ready yet. Please try again later.
         <button type="button" class="close" data-dismiss="alert">&times;</button>
       </div>
+      {% endif %}
+      {% if get_label %}
+      {{ get_label }}
       {% endif %}
     </div>
   </div>
