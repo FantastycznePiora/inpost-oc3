@@ -66,14 +66,6 @@ class ModelExtensionShippingInPostOC3 extends Model {
                             //$this->log->write(print_r('order volume: '.print_r($order['volume'],true), true));
                             //$this->log->write(print_r('t_order volume: '.print_r($t_order['volume'],true), true));
                             //$this->log->write(print_r('$parcel_template_volume: '. $parcel_template_volume, true));
-                            if(
-                                // hack: assuming mm and for kg length/height classes, TODO: allow customization of parcel templates sizes via admin
-                                ($parcel_template['max_height'] - 20) > $t_order['height']
-                                && ($parcel_template['max_width'] - 20) > $t_order['width'] && ($parcel_template['max_length'] - 20)  > $t_order['length']
-                                && $t_order['weight'] < $parcel_template['max_weight']
-                            ) { 
-                                $pt_sizes[$parcel_template['id']]=$parcel_template['max_height'] - $t_order['height']; 
-                            }  
                         }
                     }
                     if(!empty($pt_volumes)) {
