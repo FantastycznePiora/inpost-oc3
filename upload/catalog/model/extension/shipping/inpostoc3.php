@@ -29,18 +29,17 @@ class ModelExtensionShippingInPostOC3 extends Model {
                     // size order first
                     $products = $this->cart->getProducts();
                     $order['weight'] =0;
-                    $order['length'] =0;
-                    $order['width'] = 0;
-                    $order['height'] =0;
+                    $order['volume'] = 0;
                     $cart_l_clid = $this->cart->config->get('config_length_class_id');
                     $cart_w_clid = $this->cart->config->get('config_weight_class_id');
                     foreach ($products as $product) {
                         if ($product['shipping']) {
                             
                             $order['weight'] += $this->weight->convert($product['weight'] * $product['quantity'], $product['weight_class_id'], $cart_w_clid);
-                            $order['length'] = max( $this->length->convert( $product['length'], $product['length_class_id'], $cart_l_clid), $order['length'] );
-                            $order['width'] = max( $this->length->convert($product['width'], $product['length_class_id'], $cart_l_clid), $order['width']);
-                            $order['height'] += $this->length->convert($product['height'] * $product['quantity'], $product['length_class_id'], $cart_l_clid);
+                            $order['volume'] += $this->length->convert( $product['length'], $product['length_class_id'], $cart_l_clid) * 
+                                                $this->length->convert($product['width'], $product['length_class_id'], $cart_l_clid) *
+                                                $this->length->convert($product['height'], $product['length_class_id'], $cart_l_clid)
+                                                * $product['quantity']; //cubic unit
                         }
                     }
                     
@@ -48,16 +47,25 @@ class ModelExtensionShippingInPostOC3 extends Model {
                     $parcel_templates = $this->getParcelTemplates($filter);
                     $pt_sizes = array ();
                     $selected_template;
+                    
                     // match sizes
                     foreach($parcel_templates as $parcel_template){
                         //pt_l_clid should be fixed for mm, pt_w_clid for kg, or all template sizes should be adjustable along with classes
                         $pt_l_clid=$this->config->get('shipping_inpostoc3_' . $result['geo_zone_id'] . '_' . $parcel_template['id'] . '_length_class_id');
                         $pt_w_clid=$this->config->get('shipping_inpostoc3_' . $result['geo_zone_id'] . '_' . $parcel_template['id'] . '_weight_class_id');
                         if (isset($pt_l_clid) && isset($pt_w_clid)) {
-                            $t_order['height'] = $this->length->convert($order['height'], $cart_l_clid, $pt_l_clid);
-                            $t_order['width'] = $this->length->convert($order['width'], $cart_l_clid, $pt_l_clid);
-                            $t_order['length'] = $this->length->convert( $order['length'] , $cart_l_clid, $pt_l_clid);
                             $t_order['weight'] =  $this->weight->convert($order['weight'], $cart_w_clid, $pt_w_clid);
+                            $t_order['volume'] =  $order['volume'] ; //remember it's cubic unit!
+                            //convert from default mm to whatever the cart measurement unit class is - assume there's a cofiguration in place!
+                            $parcel_template_volume = $this->length->convert($parcel_template['max_height']-5, $pt_l_clid , $cart_l_clid ) * 
+                                                    $this->length->convert($parcel_template['max_width'] - 5, $pt_l_clid , $cart_l_clid) * 
+                                                    $this->length->convert($parcel_template['max_length'] - 5, $pt_l_clid , $cart_l_clid);
+                            if ($parcel_template_volume >= $t_order['volume'] ) {
+                                $pt_volumes[$parcel_template['id']] = $parcel_template_volume - $t_order['volume'];
+                            }
+                            //$this->log->write(print_r('order volume: '.print_r($order['volume'],true), true));
+                            //$this->log->write(print_r('t_order volume: '.print_r($t_order['volume'],true), true));
+                            //$this->log->write(print_r('$parcel_template_volume: '. $parcel_template_volume, true));
                             if(
                                 // hack: assuming mm and for kg length/height classes, TODO: allow customization of parcel templates sizes via admin
                                 ($parcel_template['max_height'] - 20) > $t_order['height']
@@ -68,19 +76,18 @@ class ModelExtensionShippingInPostOC3 extends Model {
                             }  
                         }
                     }
-                    if(!empty($pt_sizes)) {
-                        // finds closest parcel_template['id'] via min on height differences
-                        $selected_template = $this->getParcelTemplate(array_search(min($pt_sizes),$pt_sizes,true));
+                    if(!empty($pt_volumes)) {
+                        //finds closest parcel_template['id'] va min on volume difference
+                        $selected_template = $this->getParcelTemplate(array_search(min($pt_volumes), $pt_volumes,true));
                     } else {
                         // wooah, too big or non-standard to be sent via this service - break the loop
                         $this->log->write(print_r($this->language->get('error_quote_template'), true));
                         $this->log->write(print_r($products, true));
                         break;
-                        //$selected_template = $this->getParcelTemplate("3");
                     }
                     
-                    $this->log->write(print_r('selected_template:', true));
-                    $this->log->write(print_r($selected_template, true));
+                    //$this->log->write(print_r('selected_template:', true));
+                    //$this->log->write(print_r($selected_template, true));
 
                     $rates = explode(',', $this->config->get('shipping_inpostoc3_' . $result['geo_zone_id'] . '_' . $inpost_service['id'] . '_locker_standard_rate'));
     
