@@ -1498,6 +1498,12 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
         foreach ($shipment['parcels'] as $parcel) {
             $json['parcels'][$index]['id']          = $parcel['id'];
             $json['parcels'][$index]['template']    = $parcel['template_identifier'];
+            /*$json['parcels'][$index]['dimensions']['width']       = $parcel['max_width'];
+            $json['parcels'][$index]['dimensions']['length']      = $parcel['max_length'];
+            $json['parcels'][$index]['dimensions']['height']      = $parcel['max_height'];
+            $json['parcels'][$index]['dimensions']['unit']        = "mm";
+            $json['parcels'][$index]['weight']['amount']          = $parcel['max_weight'];;
+            $json['parcels'][$index]['weight']['unit']            = "kg";*/
             $index++;
         }
 

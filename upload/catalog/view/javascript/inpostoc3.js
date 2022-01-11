@@ -29,7 +29,7 @@ catch (err) {
 
 $("#collapse-shipping-method").on('change', 'input[name="shipping_method"]:checked', function(e) {
   // if this is inpostoc3 selected
-  console.log($(this).attr('id'));
+  //console.log($(this).attr('id'));
   if ( $(this).val().split(".")[0] === ipoc3.extensionName ) 
   {
     // if div with map exists and no point selected - just show it upon selection of shipping option
@@ -37,7 +37,7 @@ $("#collapse-shipping-method").on('change', 'input[name="shipping_method"]:check
       $('#' + ipoc3.geoWDivId).show(animationDelay);
       // todo: if point selected, focus map around it
       if( 'name' in ipoc3.selectedPoint  ) {
-        console.log(ipoc3.selectedPoint);
+        //console.log(ipoc3.selectedPoint);
       }
     } else {
       // if it doesn't, create the div, so the map can get rendered
@@ -103,7 +103,7 @@ get ePMP() {
 
 
 function handlePointSelection(point, mapdivid) {
-  console.log('enterign callback with ajax');
+  //console.log('enterign callback with ajax');
   if( $('#'+ mapdivid +'-selected-point').length ){
     $('#'+ mapdivid +'-selected-point').text( ' ('+ point.name +')');
   } else{
@@ -127,7 +127,7 @@ function postSelectedPoint(){
     data: $('#collapse-shipping-method input[type=\'radio\']:checked'),
     dataType: 'json',
    success: function() {
-      console.log('index.php?route=extension/shipping/saveSelectedPoint called');
+      //console.log('index.php?route=extension/shipping/saveSelectedPoint called');
     },
     error: function(xhr, ajaxOptions, thrownError) {
       alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);

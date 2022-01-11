@@ -112,7 +112,7 @@ $(document).ready(function() {
                 $("#input-inpostoc3-sender-first-name-"+ ending ).val(sObj["first_name"]);
                 $("#input-inpostoc3-sender-last-name-"+ ending ).val(sObj["last_name"]);
                 $("#input-inpostoc3-sender-email-"+ ending ).val(sObj["email"]);
-                $("#input-inpostoc3-sender-phone]-"+ ending ).val(sObj["phone"]);
+                $("#input-inpostoc3-sender-phone-"+ ending ).val(sObj["phone"]);
                 $("#input-inpostoc3-sender-addr-street-"+ ending ).val(sObj["street"]);
                 $("#input-inpostoc3-sender-addr-building_number-"+ ending ).val(sObj["building_number"]);
                 $("#input-inpostoc3-sender-addr-line-1-"+ ending ).val(sObj["line1"]);

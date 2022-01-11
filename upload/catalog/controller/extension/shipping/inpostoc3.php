@@ -13,9 +13,9 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
 		} else {
             $shipping = explode('.', trim($this->request->post['shipping_method']));
             if ( !isset($shipping[0]) || !isset($shipping[1]) || !isset( $this->session->data['shipping_methods'][$shipping[0]]['quote'][$shipping[1]] ) ) {
-				$this->log->write(print_r(isset($shipping[0]), true));
-				$this->log->write(print_r(isset($shipping[1]), true));
-				$this->log->write(print_r(isset($this->session->data['shipping_methods'][$shipping[0]]['quote'][$shipping[1]])),true);
+				//$this->log->write(print_r(isset($shipping[0]), true));
+				//$this->log->write(print_r(isset($shipping[1]), true));
+				//$this->log->write(print_r(isset($this->session->data['shipping_methods'][$shipping[0]]['quote'][$shipping[1]])),true);
 
 				$json['error']['warning'] = $this->language->get('error_shipping');
             }

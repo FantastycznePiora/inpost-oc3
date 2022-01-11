@@ -78,7 +78,7 @@ $_['entry_sendfrom']                                = 'Sending from country';
 $_['entry_name']                                    = '* Enter \'Name\' in the form';
 
 // Help
-$_['help_rate']                                     = 'Example: small:10.00,medium:12.00 Parcel template size:Cost,Parcel template size:Cost, etc...';
+$_['help_rate']                                     = 'Example: small:10.561,medium:11.3740,large:12.5935 Parcel template size:Cost,Parcel template size:Cost, etc...';
 $_['help_use_api']                                  = 'It will create shipments at InPost automatically and will allow to download PDF labels via OpenCart';
 $_['help_use_sandbox_api']                          = 'If selected, Sandbox API settings will be used';
 $_['help_parcel_template_weight_class']             = 'Weight class for InPost parcel templates must be in kilograms. If not available, create weight class before using this extension.';

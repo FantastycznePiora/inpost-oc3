@@ -171,4 +171,46 @@ class ModelExtensionShippingInPostOC3 extends Model {
         }
         return $results; 
     }
+
+    public function getRoutes($filter) {
+        $result = null;
+        $sql = "
+        SELECT * FROM `inpostoc3_services_routing`
+        ";
+        $allowed_keys = array ("id", "service_id", "sender_country_iso_code_3", "receiver_country_iso_code_3","sender_country_iso_code_2", "receiver_country_iso_code_2");
+
+        $sql = $sql . $this->sqlBuildSimpleWhere($filter, $allowed_keys) . ";";
+        //$this->log->write(__METHOD__ . ' $sql: ' .$sql);
+
+        $query = $this->db->query ($sql);
+
+        //$this->log->write(__METHOD__ . ' $query: ' . print_r($query,true));
+        $result = array();
+        foreach($query->rows as $row){           
+            $result[]=$row;
+        }
+        return $result;
+    }
+
+    protected function sqlBuildSimpleWhere($filter, $keys = array()  ) {
+        $sql ='';
+        $where = array();
+        if ( !empty($filter) && is_array($filter) ) {
+            foreach ( $filter as $key => $value ) {
+                if ( empty($keys) ) {
+                    $where[] = $key . " = '" . $value ."'";
+                } else if ( in_array($key, $keys) ) {
+                    $where[] = $key . " = '" . $value ."'";
+                }
+            }
+        }
+        if ( !empty($where) ) {
+            if ( empty($filter["where_operator"]) ){
+                $filter["where_operator"] = "AND";
+            }
+            $sql = " WHERE (" . implode(" ".$filter["where_operator"]." ", $where) . ")";
+        }
+        return $sql;
+    }
+
 }
