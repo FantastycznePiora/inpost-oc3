@@ -670,10 +670,16 @@ class ModelExtensionShippingInPostOC3 extends Model {
 
         // oc3 uses MyISAM engine - no universal support for transaction for multiple queries, so one by one...
         if ( !empty($shipment['receiver']) ) {
+            foreach($shipment['receiver'] as $field) {
+                $this->lrtrim(field);
+            }
             $shipment['receiver_id'] = $this->saveAddress($shipment['receiver']);
         }
 
         if ( !empty($shipment['sender']) ) {
+            foreach($shipment['sender'] as $field) {
+                $this->lrtrim(field);
+            }
             $shipment['sender_id'] = $this->saveAddress($shipment['sender']);
         }
 
@@ -776,5 +782,12 @@ class ModelExtensionShippingInPostOC3 extends Model {
             $result[]=$row;
         }
         return $result;
+    }
+
+    // just quick trim of leading and following whitespaces
+    protected function lrtrim($string) {
+        $trimmed = ltrim($string);
+        $trimmed = rtrim($string);
+        return $trimmed;
     }
 }
