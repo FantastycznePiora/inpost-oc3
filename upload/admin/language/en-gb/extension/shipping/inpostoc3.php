@@ -76,6 +76,7 @@ $_['entry_api_org_id']                              = 'API organization id';
 $_['entry_sending_method_parcel_locker']            = 'Post at parcel locker';  // 'Nadanie w Paczkomacie'
 $_['entry_sendfrom']                                = 'Sending from country';
 $_['entry_name']                                    = '* Enter \'Name\' in the form';
+$_['entry_show_in_checkout']                        = 'Show this shipping option in checkout?';
 
 // Help
 $_['help_rate']                                     = 'Example: small:10.561,medium:11.3740,large:12.5935 Parcel template size:Cost,Parcel template size:Cost, etc...';
@@ -84,6 +85,7 @@ $_['help_use_sandbox_api']                          = 'If selected, Sandbox API 
 $_['help_parcel_template_weight_class']             = 'Weight class for InPost parcel templates must be in kilograms. If not available, create weight class before using this extension.';
 $_['help_parcel_template_length_class']             = 'Length class for InPost parcel templates must be in milimeters. If not available, create length class before using this extension.';
 $_['help_sendfrom']                                 = 'Select ISO alpha 3 code for country, from which shipments are sent to receivers in this Geo Zone';
+$_['help__show_in_checkout']                        = 'Sets whether the option will be visible in customer checkout shipping options list';
 
 // Button
 $_['button_shipping_print']                         = 'Get Label from InPost. Once done, shipment cannot be edited. If shipment in edit state, saves current shipment prior to getting a label.';

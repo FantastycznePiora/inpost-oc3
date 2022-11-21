@@ -76,6 +76,7 @@ $_['entry_api_org_id']                              = 'API ID Organizacji';
 $_['entry_sending_method_parcel_locker']            = 'Nadanie w Paczkomacie';  // 
 $_['entry_sendfrom']                                = 'Nadanie z kraju';
 $_['entry_name']                                    = '* Wprowadź \'Nazwa\' w formularzu';
+$_['entry_show_in_checkout']                        = 'Pokaż tę metodę wysyłki klientowi przy kasie?';
 
 // Help
 $_['help_rate']                                     = 'Przykład: small:10.561,medium:11.3740,large:12.5935 (angielskie nazwy szablonów są domyślne, zachowaj je). Rozmiar szablonu:Koszt.Miejscadziesiętne,Rozmiar szablonu:Koszt.Miejscadziesiętne, etc...';
@@ -84,6 +85,7 @@ $_['help_use_sandbox_api']                          = 'Jeżeli zaznaczysz TAK, b
 $_['help_parcel_template_weight_class']             = 'Klasa ciężaru dla szablonu paczki InPost musi być wyrażona w kilogramach. Jeśli nie ma takiej klasy, dodaj ją w ustawieniach OC3., zanim zacnziesz używac rozszerzenia InPost dla OC3.';
 $_['help_parcel_template_length_class']             = 'Klasa długości dla szablonu paczki InPost musi być wyrażona w milimetrach. Jeśli nie ma takiej klasy, dodaj ją w ustawieniach OC3., zanim zacnziesz używac rozszerzenia InPost dla OC3.';
 $_['help_sendfrom']                                 = 'Wybierz kod ISO alfa 3 dla kraju, z którego przesyłki sa nadawane do odbiorców w tej Geo Streie (OC3 Geo Zone).';
+$_['help__show_in_checkout']                        = 'Ustala czy ta opcja pojawi się na liście metod wysyłki podczas zamówienia.';
 
 // Button
 $_['button_shipping_print']                         = 'Pobierz etykietę z InPost API. Po pobraniu etykiety nie można edytować przesyłki. Zapisuje bieżący stan edycji przed pobraniem etykiety.';

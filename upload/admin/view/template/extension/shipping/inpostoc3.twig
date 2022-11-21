@@ -119,6 +119,29 @@
                     </select>
                   </div>
                 </div>
+
+                <!-- Enable/disable in checkout -->
+              <div class="form-group">
+                <label class="col-sm-2 control-label" for="input-show-in-checkout-{{ geo_zone.geo_zone_id }}-{{ inpost_service.id}}"><span data-toggle="tooltip" title="{{ help_show_in_checkout }}">{{ entry_show_in_checkout }}</label>
+                <div class="col-sm-10">
+                  <label class="radio-inline">
+                    {% if shipping_inpostoc3_geo_zone_show_in_checkout[geo_zone.geo_zone_id][inpost_service.id] %}
+                    <input type="radio" name="shipping_inpostoc3_{{ geo_zone.geo_zone_id }}_{{inpost_service.id}}_show_in_checkout" id="input-show-in-checkout-{{ geo_zone.geo_zone_id }}-{{ inpost_service.id}}" value="1" checked="checked" />
+                    {% else %}
+                    <input type="radio" name="shipping_inpostoc3_{{ geo_zone.geo_zone_id }}_{{inpost_service.id}}_show_in_checkout" id="input-show-in-checkout-{{ geo_zone.geo_zone_id }}" value="1" />
+                    {% endif %}
+                    {{ text_yes }}
+                  </label>
+                  <label class="radio-inline">
+                    {% if not shipping_inpostoc3_geo_zone_show_in_checkout[geo_zone.geo_zone_id][inpost_service.id] %}
+                    <input type="radio" name="shipping_inpostoc3_{{ geo_zone.geo_zone_id }}_{{inpost_service.id}}_show_in_checkout" id="input-show-in-checkout-{{ geo_zone.geo_zone_id }}-{{ inpost_service.id}}" value="0" checked="checked" />
+                    {% else %}
+                    <input type="radio" name="shipping_inpostoc3_{{ geo_zone.geo_zone_id }}_{{inpost_service.id}}_show_in_checkout" id="input-show-in-checkout-{{ geo_zone.geo_zone_id }}-{{ inpost_service.id}}" value="0" />
+                    {% endif %}
+                    {{ text_no }}
+                  </label>
+                </div>
+              </div>
                     
                 {% for parcel_template in inpost_service.parcel_templates %}
                 <div class="form-group">
@@ -156,6 +179,7 @@
                 {%  endfor %}
                 {% endif  %}
               {% endfor %}
+
 
               {% if not shipping_inpostoc3_geo_zone_hide_api[geo_zone.geo_zone_id] %}
               <div class="form-group">

@@ -149,6 +149,12 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
                     $data['shipping_inpostoc3_geo_zone_locker_standard_rate'][$geo_zone['geo_zone_id']][$inpost_service['id']] = $this->config->get('shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $inpost_service['id'] .'_locker_standard_rate');
                 }
 
+                if (isset($this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $inpost_service['id'] . '_show_in_checkout'])) {
+                    $data['shipping_inpostoc3_geo_zone_show_in_checkout'][$geo_zone['geo_zone_id']][$inpost_service['id']] = $this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $inpost_service['id'] . '_show_in_checkout'];
+                } else {
+                    $data['shipping_inpostoc3_geo_zone_show_in_checkout'][$geo_zone['geo_zone_id']][$inpost_service['id']] = $this->config->get('shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $inpost_service['id'] . '_show_in_checkout');
+                }
+
                 foreach ($inpost_service['parcel_templates'] as $parcel_template) {
                     if (isset($this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $parcel_template['id'] . '_weight_class_id'])) {
                         $data['shipping_inpostoc3_geo_zone_weight_class_id'][$geo_zone['geo_zone_id']][$parcel_template['id']] = $this->request->post['shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $parcel_template['id'] . '_weight_class_id'];
@@ -162,6 +168,7 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
                     } else {
                         $data['shipping_inpostoc3_geo_zone_length_class_id'][$geo_zone['geo_zone_id']][$parcel_template['id']] = $this->config->get('shipping_inpostoc3_' . $geo_zone['geo_zone_id'] . '_' . $parcel_template['id'] . '_length_class_id');
                     }
+
                 }
                         // TODO
                         // add max_height, max_width, max_length for mm
@@ -169,6 +176,8 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
                         // these will determine wheter to use template small/medium/large and usually should be ca 2cm under default limits
 
             }
+
+            
                        
             // hide api options if cannot be used with particular geozone 
             if ($data['shipping_inpostoc3_geo_zone_hide_api'][$geo_zone['geo_zone_id']] == true){
@@ -592,7 +601,7 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
 
         foreach ($data['input-inpostoc3'] as $order ) {
             
-            foreach ($order['shipments'] as $shipment ) {
+            foreach ($order['shipments'] as &$shipment ) {
                 //$this->log->write(__METHOD__ .' shipment to save struct: ' . print_r($shipment,true));
                 // grab shipment status - if it's been sent already, can't save
                 unset($filter);
@@ -781,6 +790,10 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
             $errlog .= " [ERROR:  Sending Method required (*) details missing!]\n";
         }
         //check only address details - make shipment save before a call to API
+        if ( empty($shipment['sender']['name']) ) {
+            $noerr = false;
+            $errlog .= " [ERROR:  Sender general name missing!]\n";
+        }
         if ( empty($shipment['sender']['first_name']) || empty($shipment['sender']['last_name']) ) {
             $noerr = false;
             $errlog .= " [ERROR:  Sender first or last name missing!]\n";
@@ -804,6 +817,10 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
         if ( empty($shipment['sender']['post_code']) ) {
             $noerr = false;
             $errlog .= " [ERROR:  Sender post code missing!]\n";
+        }
+        if ( empty($shipment['receiver']['name']) ) {
+            $noerr = false;
+            $errlog .= " [ERROR:  receiver general name missing!]\n";
         }
         if ( empty($shipment['receiver']['first_name']) || empty($shipment['receiver']['last_name']) ) {
             $noerr = false;
@@ -1153,7 +1170,7 @@ class ControllerExtensionShippingInPostOC3 extends Controller {
 
     // shipping - entry point, API comms & grabbing labels (maybe save them to DB)
     public function ship2InpostApi() {
-        //$this->log->write(__METHOD__ );
+        $this->log->write(__METHOD__ );
         $data = array ();
         
         if (isset($this->error['warning'])) {

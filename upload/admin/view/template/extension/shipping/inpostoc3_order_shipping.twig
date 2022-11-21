@@ -235,14 +235,13 @@
                               name="input-inpostoc3[{{order_id}}][shipments][{{ shipment.id }}][sender][name]" id="input-inpostoc3-sender-name-{{order_id}}-{{ shipment.id }}"
                               value="{{ shipment.sender.name }}" >
                               {% endif %}
-                              {% if shipment.sender_id %}
                               <input type="hidden" form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}"
                               name="input-inpostoc3[{{order_id}}][shipments][{{ shipment.id }}][sender][id]" id="input-inpostoc3-sender-id-{{order_id}}-{{ shipment.id }}"
-                              value="{{ shipment.sender_id }}" >
-                              <input type="hidden" form="form-inpostoc3-order-shipping-{{ order_id }}-{{ shipment.id }}"
-                              name="input-inpostoc3[{{order_id}}][shipments][{{ shipment.id }}][sender_id]" id="input-inpostoc3-sender_id-{{order_id}}-{{ shipment.id }}"
-                              value="{{ shipment.sender_id }}" >
+                              {% if shipment.sender_id %}
+                              value="{{ shipment.sender_id }}"
                               {% endif %}
+                              >
+                              
                             </div>
                           </div>
                           <div class="form-group row form-inline" style="border-top: 0px; padding-top: 5px; padding-bottom: 5px;">

@@ -107,6 +107,7 @@ $(document).ready(function() {
             $.each( data, function( saId, saObj ) {
               $.each (saObj, function(sId, sObj) {
                 console.log(' sender_id + company name: ' + sObj["id"] + '  ' + sObj["company_name"]); 
+                $("#input-inpostoc3-sender-id-"+ ending ).val(sObj["id"]);
                 $("#input-inpostoc3-sender-name-"+ ending ).val(sObj["name"]);
                 $("#input-inpostoc3-sender-company-name-"+ ending ).val(sObj["company_name"]);
                 $("#input-inpostoc3-sender-first-name-"+ ending ).val(sObj["first_name"]);
