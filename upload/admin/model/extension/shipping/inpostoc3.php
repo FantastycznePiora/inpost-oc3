@@ -590,7 +590,7 @@ class ModelExtensionShippingInPostOC3 extends Model {
             'country_iso_code_2' => null,
             'country_iso_code_3' => null
         );
-
+        // $this->log->write(__METHOD__ . '$addr: ' . print_r($addr,true));
         $sql = $this->sqlBuildSimplePartsForInsertOnDupKey(array_intersect_key($addr, $allowed_keys),$target);
         $this->db->query($sql);
         $addr_id = $this->db->getLastId();
@@ -670,15 +670,15 @@ class ModelExtensionShippingInPostOC3 extends Model {
 
         // oc3 uses MyISAM engine - no universal support for transaction for multiple queries, so one by one...
         if ( !empty($shipment['receiver']) ) {
-            foreach($shipment['receiver'] as $field) {
-                $this->lrtrim(field);
+            foreach($shipment['receiver'] as $key=>&$value) {
+                $value=$this->lrtrim($value);
             }
             $shipment['receiver_id'] = $this->saveAddress($shipment['receiver']);
         }
 
         if ( !empty($shipment['sender']) ) {
-            foreach($shipment['sender'] as $field) {
-                $this->lrtrim(field);
+            foreach($shipment['sender'] as $key=>&$value) {
+                $value=$this->lrtrim($value);
             }
             $shipment['sender_id'] = $this->saveAddress($shipment['sender']);
         }
@@ -784,7 +784,7 @@ class ModelExtensionShippingInPostOC3 extends Model {
         return $result;
     }
 
-    // just quick trim of leading and following whitespaces
+    // just quick trim of leading and trailing whitespaces
     protected function lrtrim($string) {
         $trimmed = ltrim($string);
         $trimmed = rtrim($string);
