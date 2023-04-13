@@ -12,7 +12,8 @@ class ModelExtensionShippingInPostOC3 extends Model {
             //if particular service enabled for geo zone to which address belongs
             foreach($inpost_services as $inpost_service) {
                 $status = false;
-                if ($this->config->get('shipping_inpostoc3_'. $result['geo_zone_id'] . '_' . $inpost_service['id'] . '_status')) {
+                if ($this->config->get('shipping_inpostoc3_'. $result['geo_zone_id'] . '_' . $inpost_service['id'] . '_status') 
+                    && $this->config->get('shipping_inpostoc3_'. $result['geo_zone_id'] . '_' . $inpost_service['id'] . '_show_in_checkout') ) {
                     $query = $this->db->query("SELECT * FROM " . DB_PREFIX . "zone_to_geo_zone WHERE geo_zone_id = '" . (int)$result['geo_zone_id'] . "' AND country_id = '" . (int)$address['country_id'] . "' AND (zone_id = '" . (int)$address['zone_id'] . "' OR zone_id = '0')");
                     if ($query->num_rows) {
                         $status = true;
